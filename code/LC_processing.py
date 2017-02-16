@@ -54,6 +54,8 @@ arg2_i = ['2', 'IN2P3']
 
 execution_environment = None
 site = None
+limitNrows = None
+
 if len(sys.argv) == 2 : 
     print('Insufficient arguments : need  to call with   arg1   arg2  *arg3')
     print('arg1 : which computer we are on' )
@@ -147,6 +149,10 @@ for patch in patches  :
     
 # Run this for processing : calculation of over 27 metrics per lightcurve per band 
 for name in filter_patch_files :
-    procP.process_patch(name, DirIn, DirOut,limitNrows=limitNrows)
+	if limitNrows is not None  : 
+        procP.process_patch(name, DirIn, DirOut,limitNrows=limitNrows)
+    else : 
+    	procP.process_patch(name, DirIn, DirOut)
+
 
 
