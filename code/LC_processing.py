@@ -136,11 +136,11 @@ elif  execution_environment == 'typhoon' :
 # Define patches which we will process in this run ... 
 filter_patch_files = []
 if site == 'NCSA':
-	patches = ['00_21']  # temporary, for just one patch...
+    patches = ['00_21']  # temporary, for just one patch...
     #patches = ['00_21','22_43','44_65', '66_87' ,'88_109','110_131', '132_153', 
     #           '154_175',  '176_181', '365_387', '388_409']  # NCSA 
 if site == 'IN2P3':
-	patches = ['155_176', '176_197','197_218', '218_239', '239_260', '260_281', '281_302', 
+    patches = ['155_176', '176_197','197_218', '218_239', '239_260', '260_281', '281_302', 
                '302_323','323_344', '344_365', '365_386']  # IN2P3
 
 for patch in patches  :
@@ -149,10 +149,10 @@ for patch in patches  :
     
 # Run this for processing : calculation of over 27 metrics per lightcurve per band 
 for name in filter_patch_files :
-	if limitNrows is not None  : 
+    if limitNrows is not None  : 
         procP.process_patch(name, DirIn, DirOut,limitNrows=limitNrows)
     else : 
-    	procP.process_patch(name, DirIn, DirOut)
+        procP.process_patch(name, DirIn, DirOut)
 
 
 
