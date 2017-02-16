@@ -36,7 +36,8 @@ import imp
 imp.reload(varF)
 from astropy.time import Time
 
-def process_patch(name, DirIn, DirOut, limitNrows=None, calc_seasonal_metrics=None, calc_seas_binned_metrics=None  ):
+def process_patch(name, DirIn, DirOut, limitNrows=None, calc_seasonal_metrics=None, calc_seas_binned_metrics=None ,
+                  verbose = None ):
     '''  A code to perform our basic processing on the raw 
     Forced Photometry data from Stripe 82, 
     performed patch-by-patch.  One clone of data lives in 
@@ -73,7 +74,7 @@ def process_patch(name, DirIn, DirOut, limitNrows=None, calc_seasonal_metrics=No
 
     '''
 
-    print('Processing filter_patch file %s' % name)
+    print('\n Processing filter_patch file %s' % name)
     
     # read in the raw lightcurve... 
     if limitNrows is not None:
@@ -137,23 +138,25 @@ def process_patch(name, DirIn, DirOut, limitNrows=None, calc_seasonal_metrics=No
     # 
     ######################### SAVING OUTPUT (unneccesarily takes time...)
     #
-    print('Saving the diagnostics...')
-    path = DirOut+'Proc_'+name
-    diagFile = path+'.diag'
-    file = open(diagFile, "w")
-    file.write('Input :  \n')
-    s = '    '+ DirIn + '\n' 
-    file.write(s)
-    s = '    '+ name + '\n\n'
-    file.write(s)
-    s = 'There are '+str(np.sum(mask)) + ' points out of ' + str(len(mask)) + ' that have SNR < 2 \n '
-    file.write(s)
-    s = '( SNR = psfFlux / psfFluxErr ) \n \n'
-    file.write(s)
-    file.write('Output :  \n')
-    s = '    '+ DirOut + 'Var'+name+ '\n'  
-    file.write(s)
-    file.close()   
+
+    if verbose is not None : 
+        print('Saving the diagnostics...')
+        path = DirOut+'Proc_'+name
+        diagFile = path+'.diag'
+        file = open(diagFile, "w")
+        file.write('Input :  \n')
+        s = '    '+ DirIn + '\n' 
+        file.write(s)
+        s = '    '+ name + '\n\n'
+        file.write(s)
+        s = 'There are '+str(np.sum(mask)) + ' points out of ' + str(len(mask)) + ' that have SNR < 2 \n '
+        file.write(s)
+        s = '( SNR = psfFlux / psfFluxErr ) \n \n'
+        file.write(s)
+        file.write('Output :  \n')
+        s = '    '+ DirOut + 'Var'+name+ '\n'  
+        file.write(s)
+        file.close()   
 
     #
     ##########  STEP 2 : Derived Quantities ###########  
@@ -213,10 +216,9 @@ def process_patch(name, DirIn, DirOut, limitNrows=None, calc_seasonal_metrics=No
     ######################### SAVING OUTPUT        ######################### 
     # 
     path = DirOut + 'Var'+name
-    print('Saving varMetricsFull...')
+    print('Saving varMetricsFull to  %s '%path)
     varMetricsFull.to_csv(path)
-    print('Saved Full, unbinned  LC statistics to %s'%path)
-
+   
     #
     ##########  STEP 3 : Variable Candidates ###########  
     # 
