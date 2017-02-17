@@ -90,6 +90,10 @@ def get_pdf_info(sigma=None, p_sigma=None):
     else:
         GaussLike = False 
 
+    # find what is the value of sigma at the maximum of pdf 
+
+    sigmaPdfMax = sigma[p_sigma == max(p_sigma)][0]
+
     # store all info : 
     stats['mean'] = E
     stats['median'] = median 
@@ -97,7 +101,7 @@ def get_pdf_info(sigma=None, p_sigma=None):
     stats['sigmaG'] = sigmaG_weighted
     stats['probInTwoStdev'] = prob
     stats['GaussLike'] = GaussLike
-    
+    stats['sigmaPdfMax'] = sigmaPdfMax
     return stats 
 
 def get_mu_sigma(xi,ei, N_boot=1000, return_plot_data = False, gridsize=70, sigma_gridsize=None, mu_gridsize=None, 
@@ -262,6 +266,9 @@ def get_mu_sigma(xi,ei, N_boot=1000, return_plot_data = False, gridsize=70, sigm
 
 
         # follow this branch if plot quantities not needed 
+        # THIS IS THE BRANCH THAT WE WANT TO USE FOR BIG
+        # MAGNETO RUN ...
+        # 
         if len(ind) < 2  : 
             # for some reason, we may be unable to find the maximum...
             if return_sigma_pdf_info == True  : 
@@ -522,7 +529,7 @@ def computeVarMetrics(group):
         # if there are no points in the lightcurve, then 
         # initialize empty stats and return that ... 
         stats = {'mean':np.nan,'median':np.nan, 'stdev':np.nan, 'sigmaG':np.nan,
-                 'probInTwoStdev':np.nan ,'GaussLike':np.nan}
+                 'probInTwoStdev':np.nan ,'GaussLike':np.nan, 'sigmaPdfMax':np.nan}
         
 
     else : 
@@ -558,7 +565,8 @@ def computeVarMetrics(group):
                       'sigmaMedian' : stats['median'],
                       'sigmaSigmaG' : stats['sigmaG'],
                       'sigmaProb2StDev' : stats['probInTwoStdev'],
-                      'pSigmaGaussLike' : stats['GaussLike']
+                      'pSigmaGaussLike' : stats['GaussLike'],
+                      'sigmaPdfMax' : stats['sigmaPdfMax']
                      })
 
 
