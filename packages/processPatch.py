@@ -173,18 +173,11 @@ def process_patch(name, DirIn, DirOut, limitNrows=None, calc_seasonal_metrics=No
     #
     #  Calculate low-order statistical properties of full lightcurves:
     # 
-    #  psfFluxMean, psfFluxMeanErr, psfFluxMedian, psfFluxMedianErr
-    #  psfFluxStDev, psfFluxSigG , psfFluxSkew, avgMJD, rangeMJD   
-    #  chi2DOF , chi2R,  sigmaFull, muFull, flagLtTenPts
-    # 
-    
+     
     varMetricsFull = grouped.apply(varF.computeVarMetrics)
     print('Calculating metrics for full lightcurves is finished')
 
-    # Calculate magnitudes based on average fluxes :
-    # psfMean  psfMedian  psfMeanErr  psfMedianErr 
-
-    def flux2absigma(flux, fluxsigma):
+     def flux2absigma(flux, fluxsigma):
       """Compute AB mag sigma given flux and flux sigma
 
       Here units of flux,  fluxsigma  don't matter 
@@ -206,7 +199,9 @@ def process_patch(name, DirIn, DirOut, limitNrows=None, calc_seasonal_metrics=No
         return -2.5 * np.log10(flux) + 8.90
       elif unit == 'cgs':
         return -2.5 * np.log10(flux) - 48.6
-    
+
+    # Calculate magnitudes based on average fluxes :
+    # psfMean  psfMedian  psfMeanErr  psfMedianErr 
     varMetricsFull['psfMean'] = flux2ab(varMetricsFull['psfFluxMean'], unit='Jy')
     varMetricsFull['psfMedian'] = flux2ab(varMetricsFull['psfFluxMedian'], unit='Jy')
     varMetricsFull['psfMeanErr'] = flux2absigma(varMetricsFull['psfFluxMean'],varMetricsFull['psfFluxMeanErr'])

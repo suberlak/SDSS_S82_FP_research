@@ -523,14 +523,13 @@ def computeVarMetrics(group):
         # initialize empty stats and return that ... 
         stats = {'mean':np.nan,'median':np.nan, 'stdev':np.nan, 'sigmaG':np.nan,
                  'probInTwoStdev':np.nan ,'GaussLike':np.nan}
-        sigmaBootMax = np.nan  # temporary
+        
 
     else : 
         # f = 1e27  # seems not needed since I solved the sigma normalization issue ... 
         #stats, mu, sigma = get_mu_sigma(Flux, FluxErr,1000, return_sigma_pdf_info = True)
-        stats, plot_data, mu, sigma = get_mu_sigma(Flux, FluxErr,1000, return_plot_data=True, return_sigma_pdf_info = True)
+        stats, mu, sigma = get_mu_sigma(Flux, FluxErr,1000, return_plot_data=False, return_sigma_pdf_info = True)
 
-        sigmaBootMax = max(plot_data['sigma_boot']) # temporary 
     # set the flag about length...
     if N > 10 : 
         flagLtTenPts = np.nan
@@ -554,7 +553,6 @@ def computeVarMetrics(group):
                       'meanMJD' : group['mjd'].mean(),
                       'rangeMJD' : rangeMJD,
                       'flagLtTenPts' : flagLtTenPts,
-                      #'sigmaBootMax': sigmaBootMax ,   # temporary : maximum of the bootstrapped resamples 
                       'sigmaMean' : stats['mean'],
                       'sigmaStDev' : stats['stdev'],
                       'sigmaMedian' : stats['median'],
