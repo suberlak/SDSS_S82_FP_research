@@ -481,7 +481,7 @@ def computeVarMetrics(group):
 
     '''
     # print diagnostic for figuring out error...
-    #print('objectId= %d'% group['objectId'].values[0])
+    print('objectId= %d'% group['objectId'].values[0])
     
     # even though I drop NaNs before, I do it here explicitly to save 
     # me from headaches 
