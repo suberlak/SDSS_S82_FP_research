@@ -40,6 +40,28 @@ import numpy as np
 
 
 import sys
+import datetime
+###  logging to a text file...
+
+logname = datetime.datetime.now().strftime('%Y-%m-%d')
+te = open(logname+'_log.txt','w')  # File where you need to keep the logs
+
+class Unbuffered:
+
+   def __init__(self, stream):
+
+       self.stream = stream
+
+   def write(self, data):
+
+       self.stream.write(data)
+       #self.stream.flush()
+       te.write(data)    # Write the data of stdout here to a text file as well
+   def flush(self):
+       self.stream.flush()
+
+sys.stdout=Unbuffered(sys.stdout)
+
 
 # use either console arguments to make this things easier, 
 # or allow to set things in stone in the code ... 
