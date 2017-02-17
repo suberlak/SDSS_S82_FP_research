@@ -177,7 +177,7 @@ def process_patch(name, DirIn, DirOut, limitNrows=None, calc_seasonal_metrics=No
     varMetricsFull = grouped.apply(varF.computeVarMetrics)
     print('Calculating metrics for full lightcurves is finished')
 
-     def flux2absigma(flux, fluxsigma):
+    def flux2absigma(flux, fluxsigma):
       """Compute AB mag sigma given flux and flux sigma
 
       Here units of flux,  fluxsigma  don't matter 
