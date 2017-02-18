@@ -245,15 +245,15 @@ print('There are %d that have a parent i<17 mag, which are discarded' % np.sum(~
 compat.PY3 = True
 
 if len(varPatchesDF_discard) > 0 : 
-    file_discard = 'Var_ugriz_'+str(len(patches))+'_patches_'+site+'_discarded.csv.gz'
+    file_discard = 'Var_ugriz_'+str(len(patches))+'_patches_'+site+'_discarded.csv'
     print('\nWe save these objects separately, to  %s '%file_discard)
-    varPatchesDF_discard.to_csv(dir_save+file_discard, compression='gzip' )
+    varPatchesDF_discard.to_csv(dir_save+file_discard )
 
 
 
-file_save = 'Var_ugriz_'+str(len(patches))+'_patches_'+site+'.csv.gz'
+file_save = 'Var_ugriz_'+str(len(patches))+'_patches_'+site+'.csv'
 print('We save the remainder of %d objects to %s'%(np.sum(mask_keep), file_save))
-varPatchesDF_save.to_csv(dir_save+file_save, compression='gzip')
+varPatchesDF_save.to_csv(dir_save+file_save) # , compression='gzip' 
 
 
 
