@@ -77,6 +77,10 @@ if len(sys.argv) > 2 :
     if site is not None and execution_environment is not None : 
         print('Using execution_environment = %s and site=%s'%(execution_environment, site))
 
+    if len(sys.argv) > 3 :
+         limitNrows = int(sys.argv[3])
+         print('Limiting rows used from each patch file to  %d'%limitNrows)
+
 if len(sys.argv) == 1 : 
     # Need to set things manually in the code , since no arguments are provided
     print('No arguments provided from the console ... ')
@@ -112,7 +116,7 @@ ebv.columns = ['objectId','ebv']
 
 
 def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, dir_var=dir_var, 
-    ebv_file =  ebv_file):
+    ebv_file =  ebv_file, limitNrows = limitNrows):
     '''
 
     Input
@@ -141,9 +145,15 @@ def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, dir_var=dir_var,
 
     # Read in all filters per patch ... 
     varPatch = {}
-    for filter in 'ugriz':
-        File = 'Var'+filter+patch+'.csv'
-        varPatch[filter] = pd.read_csv(dir_var+File)  #) , usecols = columns)
+
+    if limitNrows is not None : 
+        for filter in 'ugriz':
+            File = 'Var'+filter+patch+'.csv'
+            varPatch[filter] = pd.read_csv(dir_var+File, nrows=limitNrows)  #) , usecols = columns)
+    else: 
+        for filter in 'ugriz':
+            File = 'Var'+filter+patch+'.csv'
+            varPatch[filter] = pd.read_csv(dir_var+File)  #) , usecols = columns)
     
 
     # Check if each patch-filter file has exactly the same number of objects... 
