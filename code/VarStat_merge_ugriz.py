@@ -39,6 +39,7 @@ arg2_i = ['2', 'IN2P3']
 execution_environment = None
 site = None
 limitNrows = None
+narrow_cols = True
 
 if len(sys.argv) == 2 : 
     print('Insufficient arguments : need  to call with   arg1   arg2  *arg3')
@@ -81,13 +82,16 @@ if len(sys.argv) > 2 :
          limitNrows = int(sys.argv[3])
          print('Limiting rows used from each patch file to  %d'%limitNrows)
 
+    
+
+
 if len(sys.argv) == 1 : 
     # Need to set things manually in the code , since no arguments are provided
     print('No arguments provided from the console ... ')
     ###
     ### setting these two is CRUCIAL 
     ###
-    execution_environment = 'mac'
+    execution_environment = 'typhoon'
     site = 'NCSA'
     print('Using execution_environment = %s and site=%s'%(execution_environment, site))
 
@@ -116,22 +120,29 @@ ebv.columns = ['objectId','ebv']
 
 
 def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, dir_var=dir_var, 
-    ebv_file =  ebv_file, limitNrows = limitNrows):
+    ebv_file =  ebv_file, limitNrows = limitNrows, narrow = None):
     '''
 
     Input
     ------------
     patch - name of the patch 
-    varPatchesDF - a data frame storing the results of calculation. Initially there is 
-         none, and each consecutive patch gets appended to that data frame, which 
-         is the main result of running this function 
-    dir_var_stats -  Directory storing the results of full LC statistics...
     ebv - pandas table with objectId , and ebv value . It has to be passed to 
           add_patch, because it is a one big file that does not need to 
           be read each time a different patch is processed 
+    varPatchesDF - a data frame storing the results of calculation. Initially there is 
+         none, and each consecutive patch gets appended to that data frame, which 
+         is the main result of running this function 
+    dir_var -  Directory storing the results of full LC statistics...
+   
     ebv_file - name of a file with E(B-V) values for each object in a given 
           data source . It's solely used to print out below information about
           how many objects in a given patch have extinction information 
+    limitNrows - for testing, do we want to only take N rows from each filter-file, 
+          to speed up calculation (eg, merge ugriz on a given patch for only 
+          N=100 objects to test the code )
+    narrow - if not None  (eg. True), we limit the output file as to how many columns
+          we grab, to make the output file smaller, especially when merging across many
+          patches... 
 
     Returns
     ------------
@@ -194,10 +205,23 @@ def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, dir_var=dir_var,
     # magnitudes, even just to check how good (uniform)
     # is the E(B-V) correction : 
     # after all, it should not change within a very small area of the sky .... 
-    varPatchSave = varPatchAll
+    
 
-    # Code for dropping uncorrected magnitudes
     #compat.PY3 = True
+    if narrow is not None : 
+        # instead of dropping what we don't want, I choose 
+        # explicitly columns to keep ... 
+        filters = 'ugriz'
+        cols = ['N', 'chi2DOF', 'chi2R', 'muFull', 'psfMeanErr', 'psfMean_corr']
+
+        cols_save = [f+c for f in filters for c in cols]
+        cols_save.append('ebv')
+        cols_save.append('objectId')
+        varPatchSave = varPatchAll[cols_save]
+
+    else:
+        varPatchSave = varPatchAll
+    # if needed to only drop uncorrected mags... 
     #varPatchSave = varPatchAll.drop(['u'+'psfMean'], axis=1)
     #for filter in 'griz':
     #    varPatchSave = varPatchSave.drop(filter+'psfMean', axis=1)
@@ -226,11 +250,11 @@ if site == 'IN2P3': # IN2P3 patches (11)
 
 #  
 # Run the first patch to start the storage DF 
-varPatchesDF=  add_patch(patch=patches[0], ebv = ebv, varPatchesDF = None)
+varPatchesDF=  add_patch(patch=patches[0], ebv = ebv, varPatchesDF = None, narrow=narrow_cols)
 
 # Loop over the rest of the patches to append to that DF 
 for patch in patches[1:]:
-    varPatchesDF=  add_patch(patch=patch, ebv = ebv, varPatchesDF = varPatchesDF)
+    varPatchesDF=  add_patch(patch=patch, ebv = ebv, varPatchesDF = varPatchesDF, narrow = narrow_cols)
     
 
 
@@ -252,7 +276,13 @@ print('Out of total number of %d objects, with combined metrics across ugriz fil
 print('There are %d that have a parent i<17 mag, which are discarded' % np.sum(~mask_keep))
 
 # http://stackoverflow.com/questions/28535067/unable-to-remove-unicode-char-from-column-names-in-pandas 
-compat.PY3 = True
+# this thing prevents a disaster before I can get a hang of 
+# how to run Python 3.5 on typhoon...
+if sys.version_info >= (3,0,0):
+    compat.PY3 = True
+else : 
+    compat.PY3 = False 
+
 
 if len(varPatchesDF_discard) > 0 : 
     file_discard = 'Var_ugriz_'+str(len(patches))+'_patches_'+site+'_discarded.csv'
