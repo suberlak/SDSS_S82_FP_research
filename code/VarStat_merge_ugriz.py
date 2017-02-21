@@ -205,9 +205,8 @@ def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, dir_var=dir_var,
     # magnitudes, even just to check how good (uniform)
     # is the E(B-V) correction : 
     # after all, it should not change within a very small area of the sky .... 
-    
 
-    #compat.PY3 = True
+
     if narrow is not None : 
         # instead of dropping what we don't want, I choose 
         # explicitly columns to keep ... 
@@ -217,8 +216,7 @@ def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, dir_var=dir_var,
         cols_save = [f+c for f in filters for c in cols]
         cols_save.append('ebv')
         cols_save.append('objectId')
-        varPatchSave = varPatchAll[cols_save]
-
+        varPatchSave = varPatchAll.loc[:, cols_save]
     else:
         varPatchSave = varPatchAll
     # if needed to only drop uncorrected mags... 
@@ -226,7 +224,7 @@ def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, dir_var=dir_var,
     #for filter in 'griz':
     #    varPatchSave = varPatchSave.drop(filter+'psfMean', axis=1)
 
-    varPatchSave['patch'] = patch
+    varPatchSave.loc[:,'patch'] = patch
     
     if varPatchesDF is not None : 
         varPatchesDF = varPatchesDF.append(varPatchSave)
