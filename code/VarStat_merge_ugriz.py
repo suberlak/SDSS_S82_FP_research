@@ -49,7 +49,7 @@ execution_environment = None
 site = None
 limitNrows = None
 narrow_cols = True
-test_on_N_patches = None
+test_on_N_patches = None  
 
 
 import sys 
@@ -372,14 +372,15 @@ if len(varPatchesDF_discard) > 0 :
 
 if narrow_cols is not None : 
     file_save = 'Var_ugriz_'+str(len(patches))+'_patches_'+site+'_narrow.csv'
-    print('Saving only selected columns : ')
+    print('\nSaving only selected columns : ')
     print(np.ravel(varPatchesDF_save.columns))
 else:
     file_save = 'Var_ugriz_'+str(len(patches))+'_patches_'+site+'.csv'
 
-print('We save the remainder of %d objects to %s'%(len(varPatchesDF_save), dir_save+file_save))
+print('\We save the  %d objects without bright parents to %s'%(len(varPatchesDF_save), dir_save+file_save))
 
-varPatchesDF_save.to_csv(dir_save+file_save) # , compression='gzip' 
+# This is the main product : across filters and patches merged file... 
+varPatchesDF_save.to_csv(dir_save+file_save, compression='gzip' ) 
 
 
 
