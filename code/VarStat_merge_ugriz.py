@@ -49,15 +49,11 @@ execution_environment = None
 site = None
 limitNrows = None
 narrow_cols = True
-test_on_N_patches = 1 
+test_on_N_patches = None
 
 
 import sys 
 import datetime 
-###  logging to a text file...
-
-logname = datetime.datetime.now().strftime('%Y-%m-%d')
-te = open('VarStat_merge_'+logname+'_log.txt','w')  # File where you need to keep the logs
 
 class Unbuffered:
 
@@ -72,8 +68,6 @@ class Unbuffered:
        te.write(data)    # Write the data of stdout here to a text file as well
    def flush(self):
        self.stream.flush()
-
-sys.stdout=Unbuffered(sys.stdout)
 
 
  # lines between here and XXX are straight from LC_processing.py
@@ -142,14 +136,20 @@ if len(sys.argv) == 1 :
 # Need this to locate my packages ...
 if execution_environment == 'mac' : 
     dir_info = '../raw_data/repo_fls/'
-    dir_var=  '../data_products/varMetrics/' 
+    dir_var  = '../data_products/varMetrics/' 
     dir_save = '../data_products/varMetricsMerged/'
 
 elif execution_environment == 'typhoon' :
     dir_info = '/astro/users/suberlak/Desktop/deep_source/'
-    dir_var =  '/astro/store/scratch/tmp/suberlak/s13_S82_2017/'+site+'/'
-    dir_save= '/astro/store/scratch/tmp/suberlak/s13_S82_2017/'+site+'/varMetricsMerged/'
+    dir_var  = '/astro/store/scratch/tmp/suberlak/s13_S82_2017/'+site+'/'
+    dir_save = '/astro/store/scratch/tmp/suberlak/s13_S82_2017/'+site+'/varMetricsMerged/'
 
+###  logging to a text file...
+
+# https://docs.python.org/2/library/datetime.html#strftime-strptime-behavior
+logname = datetime.datetime.now().strftime('%Y-%m-%d-%H.%M.%S')
+te = open(dir_save + 'VarStat_merge_'+logname+'_log.txt','w')  # File where you need to keep the logs
+sys.stdout=Unbuffered(sys.stdout)
 
 print('Combining ugriz variability results for forced photometry lightcurves from %s'%site)
 
@@ -378,7 +378,8 @@ if narrow_cols is not None :
 else:
     file_save = 'Var_ugriz_'+str(len(patches))+'_patches_'+site+'.csv'
 
-print('We save the remainder of %d objects to %s'%(len(varPatchesDF_save), file_save))
+print('We save the remainder of %d objects to %s'%(len(varPatchesDF_save), dir_save+file_save))
+
 varPatchesDF_save.to_csv(dir_save+file_save) # , compression='gzip' 
 
 
