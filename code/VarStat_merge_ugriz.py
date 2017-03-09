@@ -353,9 +353,9 @@ varPatchesDF_discard = varPatchesDF1[~mask_keep]
 
 
 print('Out of total number of %d objects, with combined metrics across ugriz filters and  %d patches '%
-      (len(varPatchesDF_save), len(patches)))
+      (len(varPatchesDF1), len(patches)))
 
-print('There are %d that have a parent i<17 mag, which are discarded' % np.sum(~mask_keep))
+print('There are %d that have a parent i<17 mag, which are discarded' % len(varPatchesDF_discard))
 
 # http://stackoverflow.com/questions/28535067/unable-to-remove-unicode-char-from-column-names-in-pandas 
 # this thing prevents a disaster before I can get a hang of 
@@ -378,7 +378,7 @@ if narrow_cols is not None :
 else:
     file_save = 'Var_ugriz_'+str(len(patches))+'_patches_'+site+'.csv'
 
-print('We save the remainder of %d objects to %s'%(np.sum(mask_keep), file_save))
+print('We save the remainder of %d objects to %s'%(len(varPatchesDF_save), file_save))
 varPatchesDF_save.to_csv(dir_save+file_save) # , compression='gzip' 
 
 
