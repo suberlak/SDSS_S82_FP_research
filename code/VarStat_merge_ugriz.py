@@ -145,18 +145,17 @@ elif execution_environment == 'typhoon' :
     dir_save = '/astro/store/scratch/tmp/suberlak/s13_S82_2017/'+site+'/varMetricsMerged/'
 
 ###  logging to a text file...
-
 # https://docs.python.org/2/library/datetime.html#strftime-strptime-behavior
-logname = datetime.datetime.now().strftime('%Y-%m-%d-%H.%M.%S')
-te = open(dir_save + 'VarStat_merge_'+logname+'_log.txt','w')  # File where you need to keep the logs
+logdate = datetime.datetime.now().strftime('%Y-%m-%d-%H.%M.%S')
+logname = dir_save + 'VarStat_merge_'+logdate+'_log.txt'
+te = open(logname,'w')  # File where you need to keep the logs
 sys.stdout=Unbuffered(sys.stdout)
+
 
 print('Combining ugriz variability results for forced photometry lightcurves from %s'%site)
 
-
 # Get E(B-V) : once for all objects across all patches 
 ebv_file = 'ebv_'+site+'_lt235.dat'
-
 ebv = pd.read_table(dir_info+ebv_file, delimiter=' ', usecols=[0,1])
 ebv.columns = ['objectId','ebv']
 
