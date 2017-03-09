@@ -29,12 +29,35 @@ from pandas import compat
 # - keep only extinction-corrected mean magnitudes, N, and var params
 # - save all patches as  N_objects (rows) x 6 columns * 5 filters as a single file 
  
-import sys 
+#
+# Example usage : 
+# 
+# -- for testing  on mac using NCSA , using only 1000 first rows of each filter-patch file... 
+# python VarStat_merge_ugriz.py m 1  1000
+# 
+# -- for full run on typhoon with NCSA 
+# python VarStat_merge_ugriz.py t 1 
+# 
+# -- note : by default , narrow_cols = True, 
+# which only saves a subset of columns. 
+# If need to save all columns, need to set that to narrow_cols = None 
+# If need to save all patches, keep test_on_N_patches = None 
+# otherwise, we will only run a subset of patches  
 
+
+execution_environment = None
+site = None
+limitNrows = None
+narrow_cols = True
+test_on_N_patches = 1 
+
+
+import sys 
+import datetime 
 ###  logging to a text file...
 
 logname = datetime.datetime.now().strftime('%Y-%m-%d')
-te = open('VarSta_merge_'+logname+'_log.txt','w')  # File where you need to keep the logs
+te = open('VarStat_merge_'+logname+'_log.txt','w')  # File where you need to keep the logs
 
 class Unbuffered:
 
@@ -59,10 +82,6 @@ arg1_t = ['t', 'typhoon', 'workstation']
 arg2_n = ['1', 'NCSA']
 arg2_i = ['2', 'IN2P3']
 
-execution_environment = None
-site = None
-limitNrows = None
-narrow_cols = True
 
 if len(sys.argv) == 2 : 
     print('Insufficient arguments : need  to call with   arg1   arg2  *arg3')
@@ -178,6 +197,9 @@ def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, dir_var=dir_var,
     #columns = ['objectId','N','chi2DOF','muFull','sigmaFull','psfMean']
 
     # Read in all filters per patch ... 
+    # these files have results of variability metrics calculation 
+    # from computeVarMetrics() in ../packages/variabilityFunctions.py
+
     varPatch = {}
 
     if limitNrows is not None : 
@@ -247,6 +269,7 @@ def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, dir_var=dir_var,
     #for filter in 'griz':
     #    varPatchSave = varPatchSave.drop(filter+'psfMean', axis=1)
 
+    # add a column saying which patch we are adding data from ... 
     varPatchSave.loc[:,'patch'] = patch
     
     if varPatchesDF is not None : 
@@ -260,15 +283,18 @@ def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, dir_var=dir_var,
 
 
 if site == 'NCSA':  # NCSA patches (11)
-    patches=['00_21']  # test on only one patch....
-
-    #patches = ['00_21', '22_43', '44_65','66_87', '88_109','110_131', '132_153', 
-    #           '154_175',  '176_181', '365_387', '388_409']
+    patches = ['00_21', '22_43', '44_65','66_87', '88_109','110_131', '132_153', 
+               '154_175',  '176_181', '365_387', '388_409']
 
 if site == 'IN2P3': # IN2P3 patches (11)
     patches = ['155_176', '176_197','197_218', '218_239', '239_260', '260_281', 
                '281_302',  '302_323','323_344', '344_365', '365_386']
 
+
+if test_on_N_patches is not None :  
+    patches = patches[:test_on_N_patches]
+    print('Using only %d patches for testing : '%test_on_N_patches)
+    print(patches)
 #  
 # Run the first patch to start the storage DF 
 varPatchesDF=  add_patch(patch=patches[0], ebv = ebv, varPatchesDF = None, narrow=narrow_cols)
@@ -277,7 +303,42 @@ varPatchesDF=  add_patch(patch=patches[0], ebv = ebv, varPatchesDF = None, narro
 for patch in patches[1:]:
     varPatchesDF=  add_patch(patch=patch, ebv = ebv, varPatchesDF = varPatchesDF, narrow = narrow_cols)
     
+# At this point, we have the following columns : 
+# ( if narrow  = True )
+# np.ravel(varPatchesDF.columns) = array(['uN', 'uchi2DOF', 'uchi2R', 'umuFull', 'upsfMeanErr',
+#       'upsfMean_corr', 'gN', 'gchi2DOF', 'gchi2R', 'gmuFull',
+#       'gpsfMeanErr', 'gpsfMean_corr', 'rN', 'rchi2DOF', 'rchi2R',
+#       'rmuFull', 'rpsfMeanErr', 'rpsfMean_corr', 'iN', 'ichi2DOF',
+#       'ichi2R', 'imuFull', 'ipsfMeanErr', 'ipsfMean_corr', 'zN',
+#       'zchi2DOF', 'zchi2R', 'zmuFull', 'zpsfMeanErr', 'zpsfMean_corr',
+#       'ebv', 'objectId', 'patch'], dtype=object)
 
+#
+# Add ra, dec , extendedness information 
+#
+deep_source_ext = pd.read_csv(dir_info+'DeepSource'+site+'_i_lt235_extendedness.csv.gz', compression='gzip', 
+                         index_col=0)
+# np.ravel(deep_source_ext.columns) = array(['deepSourceId', 'extendedness'], dtype=object)
+
+
+deep_source_radec = pd.read_csv(dir_info+'DeepSource'+site+'_i_lt235_narrow.csv.gz', compression='gzip', 
+                         index_col=0)
+# np.ravel(deep_source_radec.columns) = array(['parentDeepSourceId', 'deepCoaddId', 'ra', 'decl', 'psfMag',
+#      'psfMagSigma', 'tract', 'patch', 'detect_is_primary'], dtype=object)
+
+# only choose these two columns 
+radec = deep_source_radec[['ra','decl']]
+
+
+# Add extendedness, and ra,dec information :  
+ext_radec = pd.merge( deep_source_ext,radec, how='left', left_on='deepSourceId', right_index=True)
+
+# merge this in to the varPatchesDF 
+# left merge : only add the information from 
+# ext_radec to the objects already present in 
+# varPatchesDF 
+varPatchesDF1 =  pd.merge(varPatchesDF,ext_radec, how='left', left_on = 'objectId', 
+                      right_on = 'deepSourceId') 
 
 # Select out those objects that had parents brighter than iPsfMag  (uncorrected for extinction)
 # < 17 mag , because for those objects the deblender was not working properly,
@@ -285,10 +346,10 @@ for patch in patches[1:]:
 
 # Make sure we are keeping only objects without bright parents
 good_sources = np.load(dir_info+site+'_source_without_bright_parent.npy')
-mask_keep = np.in1d(varPatchesDF.objectId.values , good_sources)
+mask_keep = np.in1d(varPatchesDF1.objectId.values , good_sources)
 
-varPatchesDF_save = varPatchesDF[mask_keep]
-varPatchesDF_discard = varPatchesDF[~mask_keep]
+varPatchesDF_save = varPatchesDF1[mask_keep]
+varPatchesDF_discard = varPatchesDF1[~mask_keep]
 
 
 print('Out of total number of %d objects, with combined metrics across ugriz filters and  %d patches '%
@@ -312,6 +373,8 @@ if len(varPatchesDF_discard) > 0 :
 
 if narrow_cols is not None : 
     file_save = 'Var_ugriz_'+str(len(patches))+'_patches_'+site+'_narrow.csv'
+    print('Saving only selected columns : ')
+    print(np.ravel(varPatchesDF_save.columns))
 else:
     file_save = 'Var_ugriz_'+str(len(patches))+'_patches_'+site+'.csv'
 
