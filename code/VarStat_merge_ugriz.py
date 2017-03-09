@@ -30,6 +30,29 @@ from pandas import compat
 # - save all patches as  N_objects (rows) x 6 columns * 5 filters as a single file 
  
 import sys 
+
+###  logging to a text file...
+
+logname = datetime.datetime.now().strftime('%Y-%m-%d')
+te = open('VarSta_merge_'+logname+'_log.txt','w')  # File where you need to keep the logs
+
+class Unbuffered:
+
+   def __init__(self, stream):
+
+       self.stream = stream
+
+   def write(self, data):
+
+       self.stream.write(data)
+       #self.stream.flush()
+       te.write(data)    # Write the data of stdout here to a text file as well
+   def flush(self):
+       self.stream.flush()
+
+sys.stdout=Unbuffered(sys.stdout)
+
+
  # lines between here and XXX are straight from LC_processing.py
 arg1_m = ['m', 'mac', 'macbook']
 arg1_t = ['t', 'typhoon', 'workstation']
@@ -287,9 +310,11 @@ if len(varPatchesDF_discard) > 0 :
     print('\nWe save these objects separately, to  %s '%file_discard)
     varPatchesDF_discard.to_csv(dir_save+file_discard )
 
+if narrow_cols is not None : 
+    file_save = 'Var_ugriz_'+str(len(patches))+'_patches_'+site+'_narrow.csv'
+else:
+    file_save = 'Var_ugriz_'+str(len(patches))+'_patches_'+site+'.csv'
 
-
-file_save = 'Var_ugriz_'+str(len(patches))+'_patches_'+site+'.csv'
 print('We save the remainder of %d objects to %s'%(np.sum(mask_keep), file_save))
 varPatchesDF_save.to_csv(dir_save+file_save) # , compression='gzip' 
 
