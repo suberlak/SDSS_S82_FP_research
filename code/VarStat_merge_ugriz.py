@@ -204,11 +204,11 @@ def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, dir_var=dir_var,
     if limitNrows is not None : 
         for filter in 'ugriz':
             File = 'Var'+filter+patch+'.csv'
-            varPatch[filter] = pd.read_csv(dir_var+File, nrows=limitNrows)  #) , usecols = columns)
+            varPatch[filter] = pd.read_csv(dir_var+File, nrows=limitNrows, low_memory=False)  #) , usecols = columns)
     else: 
         for filter in 'ugriz':
             File = 'Var'+filter+patch+'.csv'
-            varPatch[filter] = pd.read_csv(dir_var+File)  #) , usecols = columns)
+            varPatch[filter] = pd.read_csv(dir_var+File,low_memory=False)  #) , usecols = columns)
     
 
     # Check if each patch-filter file has exactly the same number of objects... 
