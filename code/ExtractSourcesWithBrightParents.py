@@ -27,7 +27,7 @@ import numpy as np
 # set where we run the code, which processing center, a
 # nd whose code shall we use 
 site = 'IN2P3'  # NCSA 
-execution_environment = 'mac'
+execution_environment = 'typhoon'
 use_yusra_code   = True
 
 
