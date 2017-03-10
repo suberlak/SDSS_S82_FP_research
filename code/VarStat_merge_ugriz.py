@@ -38,6 +38,9 @@ from pandas import compat
 # -- for full run on typhoon with NCSA 
 # python VarStat_merge_ugriz.py t 1 
 # 
+# -- for full run on typhoon with IN2P3 
+# python VarStat_merge_ugriz.py t 2 
+#
 # -- note : by default , narrow_cols = True, 
 # which only saves a subset of columns. 
 # If need to save all columns, need to set that to narrow_cols = None 
@@ -366,16 +369,16 @@ else :
 
 
 if len(varPatchesDF_discard) > 0 : 
-    file_discard = 'Var_ugriz_'+str(len(patches))+'_patches_'+site+'_discarded.csv'
+    file_discard = 'Var_ugriz_'+str(len(patches))+'_patches_'+site+'_discarded.csv.gz'
     print('\nWe save these objects separately, to  %s '%file_discard)
-    varPatchesDF_discard.to_csv(dir_save+file_discard )
+    varPatchesDF_discard.to_csv(dir_save+file_discard , compression='gzip')
 
 if narrow_cols is not None : 
-    file_save = 'Var_ugriz_'+str(len(patches))+'_patches_'+site+'_narrow.csv'
+    file_save = 'Var_ugriz_'+str(len(patches))+'_patches_'+site+'_narrow.csv.gz'
     print('\nSaving only selected columns : ')
     print(np.ravel(varPatchesDF_save.columns))
 else:
-    file_save = 'Var_ugriz_'+str(len(patches))+'_patches_'+site+'.csv'
+    file_save = 'Var_ugriz_'+str(len(patches))+'_patches_'+site+'.csv.gz'
 
 print('\We save the  %d objects without bright parents to %s'%(len(varPatchesDF_save), dir_save+file_save))
 
