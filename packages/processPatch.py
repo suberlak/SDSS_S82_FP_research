@@ -36,8 +36,8 @@ import imp
 imp.reload(varF)
 from astropy.time import Time
 
-def process_patch(name, DirIn, DirOut, limitNrows=None, calc_seasonal_metrics=None, calc_seas_binned_metrics=None ,
-                  verbose = None ):
+def process_patch(name, DirIn, DirOut, limitNrows=None, calc_seasonal_metrics=None, 
+                  calc_seas_binned_metrics=None , verbose = None ):
     '''  A code to perform our basic processing on the raw 
     Forced Photometry data from Stripe 82, 
     performed patch-by-patch.  One clone of data lives in 
@@ -72,6 +72,32 @@ def process_patch(name, DirIn, DirOut, limitNrows=None, calc_seasonal_metrics=No
     varMetricsFull  and varMetricsSeasonal are saved as csv files, and so 
     there is nothing that this function explicitly returns.  
 
+
+
+    Parameters :
+    ---------------------
+    name : a string : name of the patch file, assumed to be of form  g00_21.csv.gz
+    DirIn: a string : directory storing the raw S82 forced photometry lightcurves, eg. 
+         '/Users/chris/GradResearch/SDSS_S82_FP_research/raw_data/rawDataFPSplit/'   
+            (for few test NCSA patches Mac)
+          or  '/astro/store/pogo4/s13_stripe82/forced_phot_lt_23/NCSA/'  
+               (for NCSA data on astro machine )
+    DirOut : a string : name of output  directory where we save aggregate information 
+          per filter-patch , eg '/Users/chris/GradResearch/SDSS_S82_FP_research/data_products/'
+           or  '/astro/store/scratch/tmp/suberlak/s13_S82_2017/NCSA/'  
+    limitNrows : integer number of rows to process from the patch file, if not the 
+          full file  . By default limitNrows=None, and we calculate metrics for all lightcurves
+          per patch file  
+    calc_seasonal_metrics : boolean, if not None,  the program will group  all light curve points 
+          by season, (usually few poins per season), and calculate statistics on these few points 
+    calc_seas_binned_metrics: boolean, if not  None , the program will bin the entire lightcurve 
+          into seasons, by averaging flux etc per season. 
+    verbose : boolean, if not  None, will print some extended diagnostic information. 
+    
+    Returns:
+    ----------
+    None (there is nothing that the program explicitly returns - all output is saved as text files 
+         in a specified directory ).
     '''
 
     print('\n Processing filter_patch file %s' % name)
