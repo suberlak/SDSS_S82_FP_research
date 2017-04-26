@@ -108,4 +108,4 @@ for patch in patches_to_read :
 
 	DirOut = '/astro/store/scratch/tmp/suberlak/s13_S82_2017/sample_LC_combined/'
 	ascii.write(LC_stack,DirOut + 'Sample_LC_'+patch+'_'+str(len(objects_in_patch))+'-objects.csv', 
-	            format=csv,  overwrite=True )
+	            format='csv',  overwrite=True )
