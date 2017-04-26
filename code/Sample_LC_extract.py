@@ -6,6 +6,7 @@ import numpy as np
 from astropy.table import Table
 from astropy.table import vstack
 from astropy.table import Column
+from astropy.io import ascii
 
 #
 # A program to extract lightcurves for objects in the variable sample 
