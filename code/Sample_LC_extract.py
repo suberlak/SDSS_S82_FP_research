@@ -107,5 +107,5 @@ for patch in patches_to_read :
 	# Now, save the combined lightcurves too - in case it was easier to use such file...
 
 	DirOut = '/astro/store/scratch/tmp/suberlak/s13_S82_2017/sample_LC_combined/'
-	ascii.write(LC_stack,DirOut + 'Sample_LC_'+patch+'_'+str(len(len(objects_in_patch)))+'-objects.csv', 
+	ascii.write(LC_stack,DirOut + 'Sample_LC_'+patch+'_'+str(len(objects_in_patch))+'-objects.csv', 
 	            format=csv,  overwrite=True )
