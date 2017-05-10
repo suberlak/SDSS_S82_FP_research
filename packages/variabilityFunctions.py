@@ -451,16 +451,41 @@ def calcSigmaG(y):
         q25,q75 = np.percentile(y, (25,75))
         return 0.7413 * (q75-q25)
 
-def computeVarMetrics(group):
+
+def computeVarMetrics(group, flux_column='psfFlux' , error_column='psfFluxErr', time_column ='mjd', verbose=True,
+    calc_sigma_pdf =True):
     ''' Variability metrics to compute for each object on full lightcurve or 
     all points in a given season.  
 
     Takes a grouped object (outcome of pandas groupby : 
     grouped = fp_data.groupby('objectId')  
 
-    Returns : 
+    Expects : 
+    ----------------------------------------------------------------
+    - that the group has columns called   'psfFlux' , 'psfFluxErr', 
+    'objectId',  'mjd', since these are used to calculate all 
+    aggregates. 
+    - otherwise, different colnames to use should be specified by 
+    flux_column ,   error_column,  time_column  kwargs
+    - return_sigma_pdf_info = False by default : this specifies whether
+    we want to return detailed stats describing the shape of the posterior  
+    pdf p(sigma) : 
+                  'sigmaMean' : mean of the p(sigma)
+                  'sigmaStDev' : standard deviation of p(sigma)
+                  'sigmaMedian' : median of p(sigma)
+                  'sigmaSigmaG' : robust standard deviation of intrinsic sigma
+                  'sigmaProb2StDev' : the integral under  p(sigma)  between mean +/- 2 stdev  
+                  'pSigmaGaussLike' : probability of this p(sigma) being Gauss-like : 
+                      the probability of being within  2 standard deviations from the mean. 
+                      For a pure Gaussian we expect this to be 0.95449973610364158 . 
+                      If pSigmaGaussLike is > 0.9,  the pdf is probably Gauss-like 
+                  'sigmaPdfMax' : sigma at the maximum  of the 1D p(sigma) (otherwise
+                      it is found as the 2D maximum of the log-likelihood 
+                      in mu, sigma space 
 
-    a pandas series with 
+    Returns : 
+    ---------------------------------------------------------------
+    a pandas series with : 
 
       'N' = number of points in  the lightcurve 
       'psfFluxMean':  Mean of Flux  ,
@@ -488,7 +513,8 @@ def computeVarMetrics(group):
 
     '''
     # print diagnostic for figuring out error...
-    print('objectId= %d'% group['objectId'].values[0])
+    if verbose : 
+        print('objectId= %d'% group['objectId'].values[0])
     
     # even though I drop NaNs before, I do it here explicitly to save 
     # me from headaches 
@@ -497,21 +523,22 @@ def computeVarMetrics(group):
     # and for some reason, can't use here  group.dropna(..., inplace=True) !   
     # group.dropna(subset=['psfFlux', 'psfFluxErr'], inplace=True)
     group = group.replace([np.inf, -np.inf, 0], np.nan)
-    group = group.dropna(subset=['psfFlux', 'psfFluxErr'])
-    
+    group = group.dropna(subset=[flux_column, error_column])
     
     # calculate range  of  dates in a given lightcurve    
-    rangeMJD = group['mjd'].values.max() - group['mjd'].values.min() 
+    rangeMJD = group[time_column].values.max() - group[time_column].values.min() 
     
     # grab Flux and FluxErr values 
-    Flux = group['psfFlux'].values
-    FluxErr = group['psfFluxErr'].values
+    Flux = group[flux_column].values
+    FluxErr = group[error_column].values
     
     # calculate Weighted  Mean
-     
-    FluxMean = calcWeightedMean(Flux,FluxErr)
-    FluxMeanErr = calcWeightedMeanErr(FluxErr)
-    psfFluxStDev = calcWeightedStDev(Flux,FluxErr, FluxMean)
+    FluxWMean = calcWeightedMean(Flux,FluxErr)
+    FluxWMeanErr = calcWeightedMeanErr(FluxErr)
+    psfFluxStDev = calcWeightedStDev(Flux,FluxErr, FluxWMean)
+    
+    # calculate mean S/N 
+    meanSN = np.mean(Flux / FluxErr)
 
     # calculate Median error : not necessary (since it's just const * meanErr)
     # medianErr = np.sqrt(np.pi / 2.0) * FluxMeanErr
@@ -519,55 +546,76 @@ def computeVarMetrics(group):
     # note  : get_mu_sigma() gets digestion problems with NaN's - make sure 
     # that Flux and FluxErr are free of NaN's ! 
     # I multiply flux by a factor for stability issues    
+
     N = len(Flux)
-    if N == 0 : 
-        mu = np.nan
-        sigma = np.nan
-    elif N == 1  :
-        mu, sigma = Flux[0], 0
-    if N == 0 or N == 1 : 
-        # if there are no points in the lightcurve, then 
-        # initialize empty stats and return that ... 
-        stats = {'mean':np.nan,'median':np.nan, 'stdev':np.nan, 'sigmaG':np.nan,
-                 'probInTwoStdev':np.nan ,'GaussLike':np.nan, 'sigmaPdfMax':np.nan}
-        
-
-    else : 
-        # f = 1e27  # seems not needed since I solved the sigma normalization issue ... 
-        #stats, mu, sigma = get_mu_sigma(Flux, FluxErr,1000, return_sigma_pdf_info = True)
-        stats, mu, sigma = get_mu_sigma(Flux, FluxErr,1000, return_plot_data=False, return_sigma_pdf_info = True)
-
-    # set the flag about length...
+        # set the flag about length...
     if N > 10 : 
         flagLtTenPts = np.nan
     else:
         flagLtTenPts = 1 
    
+    # calculating the intrinsic variability 
+    # following AstroML 5.8 code 
+    if calc_sigma_pdf :  
+        if N == 0 : 
+            mu = np.nan
+            sigma = np.nan
+        elif N == 1  :
+            mu, sigma = Flux[0], 0
+        if N == 0 or N == 1 : 
+            # if there are no points in the lightcurve, then 
+            # initialize empty stats and return that ... 
+            stats = {'mean':np.nan,'median':np.nan, 'stdev':np.nan, 'sigmaG':np.nan,
+                     'probInTwoStdev':np.nan ,'GaussLike':np.nan, 'sigmaPdfMax':np.nan}
+        else : 
+            stats, mu, sigma = get_mu_sigma(Flux, FluxErr, 1000, return_plot_data=False, return_sigma_pdf_info = True)
+
+
     
-    return pd.Series({'N':group['psfFlux'].count(),
-                      'psfFluxMean': FluxMean,
-                      'psfFluxMeanErr' : FluxMeanErr,
-                      'psfFluxMedian': calcMedian(Flux),
-                      'psfFluxMedianErr': np.sqrt(np.pi / 2)*FluxMeanErr,
-                      'psfFluxSkew' : group['psfFlux'].skew(),
-                      'psfFluxSigG' : calcSigmaG(Flux),
-                      'psfFluxStDev':psfFluxStDev,
-                      'psfFluxStDevUnw' : np.std(Flux),     # temporary : unweighted stdev of Flux 
-                      'chi2DOF' : calcChi2raw(Flux,FluxErr),
-                      'chi2R' : calcChi2robust(Flux,FluxErr),
-                      'sigmaFull' :sigma,
-                      'muFull' :mu,
-                      'meanMJD' : group['mjd'].mean(),
-                      'rangeMJD' : rangeMJD,
-                      'flagLtTenPts' : flagLtTenPts,
-                      'sigmaMean' : stats['mean'],
-                      'sigmaStDev' : stats['stdev'],
-                      'sigmaMedian' : stats['median'],
-                      'sigmaSigmaG' : stats['sigmaG'],
-                      'sigmaProb2StDev' : stats['probInTwoStdev'],
-                      'pSigmaGaussLike' : stats['GaussLike'],
-                      'sigmaPdfMax' : stats['sigmaPdfMax']
-                     })
+        return pd.Series({'N':group[flux_column].count(),
+                          'psfFluxMean': FluxWMean,
+                          'psfFluxMeanErr' : FluxWMeanErr,
+                          'psfFluxMedian': calcMedian(Flux),
+                          'psfFluxMedianErr': np.sqrt(np.pi / 2)*FluxWMeanErr,
+                          'psfFluxSkew' : group[flux_column].skew(),
+                          'psfFluxSigG' : calcSigmaG(Flux),
+                          'psfFluxStDev':psfFluxStDev,
+                          'psfFluxStDevUnw' : np.std(Flux),     # temporary : unweighted stdev of Flux 
+                          'chi2DOF' : calcChi2raw(Flux,FluxErr),
+                          'chi2R' : calcChi2robust(Flux,FluxErr),
+                          'sigmaFull' :sigma,
+                          'muFull' :mu,
+                          'meanMJD' : group[time_column].mean(),
+                          'rangeMJD' : rangeMJD,
+                          'flagLtTenPts' : flagLtTenPts,
+                          'meanSN' : meanSN,
+                          'sigmaMean' : stats['mean'],
+                          'sigmaStDev' : stats['stdev'],
+                          'sigmaMedian' : stats['median'],
+                          'sigmaSigmaG' : stats['sigmaG'],
+                          'sigmaProb2StDev' : stats['probInTwoStdev'],
+                          'pSigmaGaussLike' : stats['GaussLike'],
+                          'sigmaPdfMax' : stats['sigmaPdfMax']
+                         })
+    # not calculating the detailed intrinsic sigma : 
+    # just LC-derived mean, median, chi2 .... 
+    else : 
+        return pd.Series({'N':group[flux_column].count(),
+                          'psfFluxMean': FluxWMean,
+                          'psfFluxMeanErr' : FluxWMeanErr,
+                          'psfFluxMedian': calcMedian(Flux),
+                          'psfFluxMedianErr': np.sqrt(np.pi / 2)*FluxWMeanErr,
+                          'psfFluxSkew' : group[flux_column].skew(),
+                          'psfFluxSigG' : calcSigmaG(Flux),
+                          'psfFluxStDev':psfFluxStDev,
+                          'psfFluxStDevUnw' : np.std(Flux),     # temporary : unweighted stdev of Flux 
+                          'chi2DOF' : calcChi2raw(Flux,FluxErr),
+                          'chi2R' : calcChi2robust(Flux,FluxErr),
+                          'meanMJD' : group[time_column].mean(),
+                          'rangeMJD' : rangeMJD,
+                          'flagLtTenPts' : flagLtTenPts,
+                          'meanSN' : meanSN
+                         })
 
 
 def ComputeVarFullBinned(group): 

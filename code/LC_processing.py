@@ -141,7 +141,7 @@ elif execution_environment == 'typhoon' :
 sys.path.insert(0, path_to_home + 'SDSS_S82_FP_research/packages/')
 
 
-import processPatch as procP
+import processPatch2 as procP
 
 #####
 #####  PROCESSING FILES
