@@ -173,9 +173,9 @@ for patch in patches  :
 # Run this for processing : calculation of over 27 metrics per lightcurve per band 
 for name in filter_patch_files :
     if limitNrows is not None  : 
-        procP.process_patch(name, DirIn, DirOut,limitNrows=limitNrows)
+        procP.process_patch(name, DirIn, DirOut, calc_sigma_pdf=False, limitNrows=limitNrows)
     else : 
-        procP.process_patch(name, DirIn, DirOut)
+        procP.process_patch(name, DirIn, DirOut, calc_sigma_pdf=False)
 
 
 

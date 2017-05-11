@@ -94,7 +94,7 @@ def flux2ab(flux, unit = 'Jy'):
         return -2.5 * np.log10(flux) - 48.6
 
 
-def process_patch(name, DirIn, DirOut, limitNrows=None, calc_seasonal_metrics=None, 
+def process_patch(name, DirIn, DirOut, calc_sigma_pdf=False, limitNrows=None, calc_seasonal_metrics=None, 
                   calc_seas_binned_metrics=None , verbose = None ):
     '''  A code to perform our basic processing on the raw 
     Forced Photometry data from Stripe 82, 
@@ -275,7 +275,7 @@ def process_patch(name, DirIn, DirOut, limitNrows=None, calc_seasonal_metrics=No
     varMetricsFull_bright  = bright_grouped.apply(varF.computeVarMetrics, 
                                                   flux_column='psfFluxJy',
                                                   error_column = 'psfFluxErrJy',
-                                                  time_column = 'mjd')
+                                                  time_column = 'mjd', calc_sigma_pdf =calc_sigma_pdf)
 
     # 2.3 Calculate stats for LC using all points 
     print('Calculating the  LC statistics using all S/N  points  ...')
@@ -283,7 +283,7 @@ def process_patch(name, DirIn, DirOut, limitNrows=None, calc_seasonal_metrics=No
     varMetricsFull_all  = all_grouped.apply(varF.computeVarMetrics, 
                                                   flux_column='psfFluxJy',
                                                   error_column = 'psfFluxErrJy',
-                                                  time_column = 'mjd') 
+                                                  time_column = 'mjd',calc_sigma_pdf =calc_sigma_pdf) 
 
 
     # 2.4  calculate magnitudes from fluxes ... 
