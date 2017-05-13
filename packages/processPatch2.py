@@ -336,7 +336,7 @@ def process_patch(name, DirIn, DirOut, calc_sigma_pdf=False, limitNrows=None, ca
 
     ######################### SAVING OUTPUT        ######################### 
     # 
-    path = DirOut + 'VarC_'+name
+    path = DirOut + 'VarD_'+name
     print('Saving varMetricsFull to  %s '%path)
     varMetricsFull_combined.to_csv(path)
     return 
