@@ -221,7 +221,8 @@ def process_patch(name, DirIn, DirOut, calc_sigma_pdf=False, limitNrows=None, ca
     # raw_data['flagFaint'] = True : makes a new col with int64
 
     # instead of two-steps, make just one : 
-    mask_SN = (raw_data['psfFluxJy'].data / raw_data['psfFluxErrJy'].data) < 2 
+    SN = raw_data['psfFluxJy'].data / raw_data['psfFluxErrJy'].data
+    mask_SN = SN < 2 
     raw_data['flagFaint'] = mask_SN
     print('There are %d points of %d that have S/N < 2' %(np.sum(mask_SN),len(mask_SN)))
 
@@ -234,20 +235,35 @@ def process_patch(name, DirIn, DirOut, calc_sigma_pdf=False, limitNrows=None, ca
         
     # temporary assignment 
     flux, flux_err = raw_data['psfFluxJy'][mask_SN].data, raw_data['psfFluxErrJy'][mask_SN].data
+    
 
-    raw_data['faintMean'][mask_SN]= faintF.calculate_mean(flux, flux_err)
-    raw_data['faintMedian'][mask_SN] = faintF.calculate_median(flux, flux_err)
-    raw_data['faintTwoSigma'][mask_SN] = faintF.calculate_2sigma(flux, flux_err)
-    raw_data['faintRMS'][mask_SN] = faintF.calculate_rms(flux, flux_err)
+    # new way of doing it with the lookup table - and very fast thanks 
+    # to the smoothness of the employed functions ! 
+
+    table_address = 'flat_prior_const_counts_lookup.csv'
+    lookup = Table.read(table_address)
+
+    # interpolate at the xObs = SN  locations .... 
+    faint_SN = SN[mask_SN]
+    xMean =  np.interp(faint_SN, lookup['xObs'].data, lookup['xMean'].data)
+    xMed =  np.interp(faint_SN, lookup['xObs'].data, lookup['xMedian'].data)
+    xSigma =  np.interp(faint_SN, lookup['xObs'].data, lookup['xSigma'].data)
+    xRMS = np.interp(faint_SN, lookup['xObs'].data, lookup['xRMS'].data)
+
+    # add this info to the table 
+    raw_data['faintMean'][mask_faint]     = xMean * flux_err
+    raw_data['faintMedian'][mask_faint]   = xMed * flux_err
+    raw_data['faintTwoSigma'][mask_faint] = xSigma * flux_err
+    raw_data['faintRMS'][mask_faint]      = xRMS * flux_err
 
 
-    # 1.6  replace psfFluxJy  by  faintMean ,
+
+    # 1.6  replace psfFluxJy  by  faintMean ,  psfFluxErrJy  by  faintRMS 
     # make sure we are only taking values  that are not NaN ... 
-    mask_NaNs = np.bitwise_not(np.isnan(raw_data['faintRMS'][mask_SN]))
+    #mask_NaNs = np.bitwise_not(np.isnan(raw_data['faintRMS'][mask_SN]))
 
-    # psfFluxErrJy  by  faintRMS 
-    raw_data['psfFluxJy'][mask_SN][mask_NaNs] = raw_data['faintMean'][mask_SN][mask_NaNs]
-    raw_data['psfFluxErrJy'][mask_SN][mask_NaNs] = raw_data['faintRMS'][mask_SN][mask_NaNs]
+    raw_data['psfFluxJy'][mask_SN] = raw_data['faintMean'][mask_SN]
+    raw_data['psfFluxErrJy'][mask_SN] = raw_data['faintRMS'][mask_SN]
 
     #
     ##########  STEP 2 : Derived Quantities ###########  
