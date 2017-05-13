@@ -251,10 +251,10 @@ def process_patch(name, DirIn, DirOut, calc_sigma_pdf=False, limitNrows=None, ca
     xRMS = np.interp(faint_SN, lookup['xObs'].data, lookup['xRMS'].data)
 
     # add this info to the table 
-    raw_data['faintMean'][mask_faint]     = xMean * flux_err
-    raw_data['faintMedian'][mask_faint]   = xMed * flux_err
-    raw_data['faintTwoSigma'][mask_faint] = xSigma * flux_err
-    raw_data['faintRMS'][mask_faint]      = xRMS * flux_err
+    raw_data['faintMean'][mask_SN]     = xMean * flux_err
+    raw_data['faintMedian'][mask_SN]   = xMed * flux_err
+    raw_data['faintTwoSigma'][mask_SN] = xSigma * flux_err
+    raw_data['faintRMS'][mask_SN]      = xRMS * flux_err
 
 
 
