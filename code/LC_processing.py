@@ -114,9 +114,6 @@ if args.n:
 if args.p : 
     print('Starting from the patch #%d '%args.p)
 
-if args.cd : 
-    print('Checking the outdir')
-    print('for files with prefix %s'%args.pre)
 
 
 # Need this to locate my packages ...
@@ -175,6 +172,9 @@ for patch in patches  :
 #  as well if want to check for any 
 #  custom prefix .... 
 if args.cd : 
+    print('Checking the output directory  %s'%DirOut)
+    print('for files with prefix %s'%args.pre)
+
     lista = np.array(os.listdir(DirOut))
     mask = np.array([l.startswith(args.pre) for l in lista])
 
@@ -191,7 +191,7 @@ if args.cd :
 
 print('Starting to process the following patch-files:')
 print(filter_patch_files)
-
+print('From the input directory %s'%DirIn)
 
 # Check if the input files are present ... 
 # assume that the files end with .gz, since 
