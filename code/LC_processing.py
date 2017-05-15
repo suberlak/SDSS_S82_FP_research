@@ -124,6 +124,11 @@ if args.cd :
 # directories depending on the 
 # workspace ... 
 
+if args.s in ['1', 'NCSA'] : 
+    site = 'NCSA'
+elif args.s in ['2', 'IN2P3']:
+    site = 'IN2P3'
+
 if args.e in  ['m', 'mac'] : 
     path_to_home = '/Users/chris/GradResearch/'
     DirIn = '/Users/chris/GradResearch/SDSS_S82_FP_research/raw_data/rawDataFPSplit/'
@@ -131,8 +136,8 @@ if args.e in  ['m', 'mac'] :
 
 elif args.e in ['t','typhoon'] :
     path_to_home = '/astro/users/suberlak/' 
-    DirIn = '/astro/store/pogo4/s13_stripe82/forced_phot_lt_23/'+args.s+'/'
-    DirOut = '/astro/store/scratch/tmp/suberlak/s13_S82_2017/'+args.s+'/'
+    DirIn = '/astro/store/pogo4/s13_stripe82/forced_phot_lt_23/'+site+'/'
+    DirOut = '/astro/store/scratch/tmp/suberlak/s13_S82_2017/'+site+'/'
 
 
 # we import the custom-written module to process 
