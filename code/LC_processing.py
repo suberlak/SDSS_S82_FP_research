@@ -32,17 +32,20 @@
 # so that we can easily run the variability 
 # code using magneto , but develop locally, on a mac  
 
-################################################################################################
 
+# Note  5/15/17 :  substantial update : introduced argparse module
+# to make usage much much easier and more intuitive 
+# 
+
+##########################################################################
 # make all necessary imports....
 import os 
 import numpy as np
-
-
 import sys
 import datetime
-###  logging to a text file...
+import argparse
 
+###  logging to a text file...
 logname = datetime.datetime.now().strftime('%Y-%m-%d')
 te = open(logname+'_log.txt','w')  # File where you need to keep the logs
 
@@ -63,117 +66,144 @@ class Unbuffered:
 sys.stdout=Unbuffered(sys.stdout)
 
 
-# use either console arguments to make this things easier, 
-# or allow to set things in stone in the code ... 
+### Initialize the ArgumentParser   
+parser = argparse.ArgumentParser(description='Process the patch files from S82 ... ')
 
-# in the future: 
-# make more user-friendly https://docs.python.org/3.3/library/argparse.html 
+# -env :  environment : either mac , m ,   or typhoon, t
+#      by default, it is mac, hence optional 
+parser.add_argument("-e", "-env", "-environment", help="set the execution environment", action="store",
+                    default = 'm', choices=['t', 'typhoon', 'm', 'mac'])
 
-arg1_m = ['m', 'mac', 'macbook']
-arg1_t = ['t', 'typhoon', 'workstation']
-arg2_n = ['1', 'NCSA']
-arg2_i = ['2', 'IN2P3']
 
-execution_environment = None
-site = None
-limitNrows = None
+# -site  : site: NCSA ,1    or IN2P3 , 2  
+parser.add_argument("-s", "-site",help="set the data processing center from which to use the data", 
+                    action ='store', default='1', choices=['NCSA', '1', 'IN2P3', '2'])
 
-if len(sys.argv) == 2 : 
-    print('Insufficient arguments : need  to call with   arg1   arg2  *arg3')
-    print('arg1 : which computer we are on' )
-    print(arg1_m); print(arg1_t)
-    print('arg2: which site should we process patches from ')
-    print(arg2_n); print(arg2_i)
-    print('arg3 : limit number of rows ? (optional)')
-   
-    print('\nFor example:')
-    print('python LC_processing.py  m 1')
-    
-    sys.exit()
 
-if len(sys.argv) > 2 :
-    ex = sys.argv[1]
-    if ex in  arg1_m:
-        execution_environment = 'mac'
-    elif ex in arg1_t:
-        execution_environment = 'typhoon'
-    else : 
-        print('Invalid argument 1 - need to choose from ')
-        print(arg1_m); print(arg1_t)
-        sys.exit()
+# -nlines : if want to process only n lines from each band-patch file 
+parser.add_argument("-n", "-nlines", help="limit the number of rows to process in each patch-file",
+                    action="store", default=None, type=int)
 
-    s = sys.argv[2]
-    if s in arg2_n:
-        site = 'NCSA'
-    elif s in arg2_i:
-        site = 'IN2P3'
-    else  : 
-        print('Invalid argument 2 - need to choose from ')
-        print(arg2_n); print(arg2_i)
-        sys.exit()
-    
-    if site is not None and execution_environment is not None : 
-        print('Using execution_environment = %s and site=%s'%(execution_environment, site))
+# -patch_start : which patch to start the processing with? Useful in case the processing 
+#    got interrupted ( alternatively would have to check the outDir for 
+#    what already exists, and remove those that already exist from the 
+#    list of patches to process... )
+parser.add_argument("-p", "-patch_start", "-ps", help='set which patch to start from, given their alphabetical ordering',
+                    action="store", default=None, type=int, choices = range(0,11))
 
-    if len(sys.argv) > 3 :
-         limitNrows = int(sys.argv[3])
-         print('Limiting rows used from each patch file to  %d'%limitNrows)
-    
-if len(sys.argv) == 1 : 
-    # Need to set things manually in the code , since no arguments are provided
-    print('No arguments provided from the console ... ')
-    ###
-    ### setting these two is CRUCIAL 
-    ###
-    execution_environment = 'mac'
-    site = 'NCSA'
-    print('Using execution_environment = %s and site=%s'%(execution_environment, site))
+# -cd : check outDir  if yes  (default no),  it would run the check of files 
+#    that startwith  -pre
+parser.add_argument("-cd", "-check_dir", help='check the output directory for which patch-files have already been processed? If so, also need to set the -pre  variable indicating the prefix of the outfiles to be checked ',
+    action='store_true')
 
+# -pre : prefix to check outDir for ... , eg  VarD_ .  This is the string before 
+#     g00_21.csv   string. 
+
+parser.add_argument("-pre", "-prefix", help = 'set the prefix for output files to be checked for which patches have already been processed',
+    action='store', default='VarD_', type=str)
+
+# parse all arguments : do it only once in an entire program ... 
+args = parser.parse_args()
+
+print('Environment:  %s'%args.e)
+print('Site %s'%args.s)
+
+if args.n:
+    print('Nlines : %d'%args.n)
+
+if args.p : 
+    print('Starting from the patch #%d '%args.p)
+
+if args.cd : 
+    print('Checking the outdir')
+    print('for files with prefix %s'%args.pre)
 
 
 # Need this to locate my packages ...
-if execution_environment == 'mac' : 
+# Also , set the input and output
+# directories depending on the 
+# workspace ... 
+
+if args.e in  ['m', 'mac'] : 
     path_to_home = '/Users/chris/GradResearch/'
+    DirIn = '/Users/chris/GradResearch/SDSS_S82_FP_research/raw_data/rawDataFPSplit/'
+    DirOut = '/Users/chris/GradResearch/SDSS_S82_FP_research/data_products/'
 
-elif execution_environment == 'typhoon' :
+elif args.e in ['t','typhoon'] :
     path_to_home = '/astro/users/suberlak/' 
+    DirIn = '/astro/store/pogo4/s13_stripe82/forced_phot_lt_23/'+args.s+'/'
+    DirOut = '/astro/store/scratch/tmp/suberlak/s13_S82_2017/'+args.s+'/'
 
+
+# we import the custom-written module to process 
+# each patch file   
+# only once path_to_home is added as a searchable path
 sys.path.insert(0, path_to_home + 'SDSS_S82_FP_research/packages/')
-
-
 import processPatch2 as procP
 
 #####
 #####  PROCESSING FILES
 #####  
 
-if execution_environment == 'mac' : 
-    DirIn = '/Users/chris/GradResearch/SDSS_S82_FP_research/raw_data/rawDataFPSplit/'
-    DirOut = '/Users/chris/GradResearch/SDSS_S82_FP_research/data_products/'
-elif  execution_environment == 'typhoon' : 
-    DirIn = '/astro/store/pogo4/s13_stripe82/forced_phot_lt_23/'+site+'/'
-    DirOut = '/astro/store/scratch/tmp/suberlak/s13_S82_2017/'+site+'/'
-
 
 # Define patches which we will process in this run ... 
 filter_patch_files = []
-if site == 'NCSA':
+if args.s in ['1', 'NCSA']:
     patches = ['00_21', '22_43','44_65', '66_87' ,'88_109','110_131', '132_153', 
                '154_175',  '176_181', '365_387', '388_409'] 
 
-if site == 'IN2P3':
+if args.s in ['2', 'IN2P3']:
     patches = ['155_176', '176_197','197_218', '218_239', '239_260', '260_281', '281_302', 
                '302_323','323_344', '344_365', '365_386']  
+
+# select from N-th patch onwards 
+if args.p :
+    patches = patches[args.p:] 
 
 
 for patch in patches  :
     for filter in 'ugriz':  
         filter_patch_files.append(filter + patch + '.csv')
-    
+
+#  check for already processed files, 
+#  need to provide -pre argument 
+#  as well if want to check for any 
+#  custom prefix .... 
+if args.cd : 
+    lista = np.array(os.listdir(DirOut))
+    mask = np.array([l.startswith(args.pre) for l in lista])
+
+    # remove only if there are any matching files in the directory ... 
+    if np.sum(mask) > 0 : 
+        full_filenames_to_remove = lista[mask]
+        length = len(args.pre)
+        filter_patch_to_remove = [name[length:] for name in full_filenames_to_remove]
+        print('Removing these files from patch-files to process...')
+        print(filter_patch_to_remove)
+        for name in filter_patch_to_remove : 
+            filter_patch_files.remove(name)
+
+
+print('Starting to process the following patch-files:')
+print(filter_patch_files)
+
+
+# Check if the input files are present ... 
+# assume that the files end with .gz, since 
+# the raw FP lightcurves are compressed ... 
+list_input = os.listdir(DirIn)
+list_csv = [name[:-3] for name in list_input]
+mask_missing_input = np.in1d(filter_patch_files, list_csv)
+if np.sum(~mask_missing_input) > 0 : 
+    print('%d of these are not in the input directory'%np.sum(~mask_missing_input))
+    print('So we process only the present patch-files:')
+    filter_patch_files = np.array(filter_patch_files)[mask_missing_input]
+    print(filter_patch_files)
+
 # Run this for processing : calculation of over 27 metrics per lightcurve per band 
 for name in filter_patch_files :
-    if limitNrows is not None  : 
-        procP.process_patch(name, DirIn, DirOut, calc_sigma_pdf=False, limitNrows=limitNrows)
+    if args.n :
+        procP.process_patch(name, DirIn, DirOut, calc_sigma_pdf=False, limitNrows=args.n)
     else : 
         procP.process_patch(name, DirIn, DirOut, calc_sigma_pdf=False)
 
