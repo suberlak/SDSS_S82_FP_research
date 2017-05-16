@@ -186,6 +186,9 @@ args = parser.parse_args()
 print('Environment:  %s'%args.e)
 print('Site %s'%args.s)
 
+if args.nc:
+    print('Saving narrow subset of columns.')
+
 if args.n:
     print('Nlines : %d'%args.n)
 
@@ -409,7 +412,7 @@ print(patches)
 needed_files = [] 
 for patch, filter in product(patches, 'ugriz') :
     needed_files.append(args.var +filter+patch+'.csv')
-print('This means that we need %d metrics files \
+print('--> This means that we need %d metrics files \
  (5 per patch) '%len(needed_files))
 
 
@@ -424,9 +427,13 @@ if np.sum(~mask_missing_input) > 0 :
     use_files= np.array(needed_files)[mask_missing_input]
     print(use_files)
 
-use_patches = np.unique([a[prefix_length+1:-4] for a in use_files])
+# we can only merge files if there are 5 patch files per patch
+print('--> we found that only for these patches there is \
+    data in all five bands :')
+p, count = np.unique([a[prefix_length+1:-4] for a in use_files],
+    return_counts = True)
+use_patches = p[count == 5]
 patches = np.array(patches)[np.in1d(patches, use_patches)]
-print('--> there is enough data to merge  only the following patches:')
 print(patches)
 
 #  
