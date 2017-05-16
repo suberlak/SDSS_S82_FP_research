@@ -67,7 +67,21 @@ class Unbuffered:
        self.stream.flush()
 
 ### Initialize the ArgumentParser   
-desc  = 'Process the patch files from S82 ... '
+desc  = 'Merge the processed files from S82.  We assume the input to be \
+files residing in DirIn,  defined by the execution environment -e, \
+starting with the variability prefix -var, one file per each of five \
+SDSS ugriz bands. If selected,  we can merge -nlines from each file, \
+and  output narrow subset of columns if -nc flag is on.  We will either \
+merge all patches for which metrics files are available, \
+or a subset of patches, set by -single_patch, -patch_start, \
+-patch_end flags.  If -cd flag is set on, then we check whether \
+the output already exists in DirOut, not to merge metrics on patches that \
+have already been merged.  It is assumed that the merged files \
+begin with the -var prefix. We assume that in the directories set \
+by DirEBV reside files with extinction per objectId, and \
+DeepSource with ra, dec, and parent magnitude,  to remove \
+objectIds with parents brighter than i = 17 mag from the merged \
+catalog. '
 parser = argparse.ArgumentParser(description=desc)
 
 # Args setting the environment variables : 
@@ -183,19 +197,19 @@ elif args.s in ['2', 'IN2P3']:
 
 # Need this to locate my packages ...
 if  args.e in  ['m', 'mac'] :
-    dir_info = '../raw_data/repo_fls/'
-    dir_var  = '../data_products/varMetrics/' 
-    dir_save = '../data_products/varMetricsMerged/'
+    DirEBV = '../raw_data/repo_fls/'
+    DirIn  = '../data_products/varMetrics/' 
+    DirOut = '../data_products/varMetricsMerged/'
 
 elif args.e in ['t','typhoon'] :
-    dir_info = '/astro/users/suberlak/Desktop/deep_source/'
-    dir_var  = '/astro/store/scratch/tmp/suberlak/s13_S82_2017/'+site+'/'
-    dir_save = '/astro/store/scratch/tmp/suberlak/s13_S82_2017/'+site+'/varMetricsMerged/'
+    DirEBV = '/astro/users/suberlak/Desktop/deep_source/'
+    DirIn  = '/astro/store/scratch/tmp/suberlak/s13_S82_2017/'+site+'/'
+    DirOut = '/astro/store/scratch/tmp/suberlak/s13_S82_2017/'+site+'/varMetricsMerged/'
 
 ###  logging to a text file...
 # https://docs.python.org/2/library/datetime.html#strftime-strptime-behavior
 logdate = datetime.datetime.now().strftime('%Y-%m-%d-%H.%M.%S')
-logname = dir_save + 'VarStat_merge_'+logdate+'_log.txt'
+logname = DirOut + 'VarStat_merge_'+logdate+'_log.txt'
 te = open(logname,'w')  # File where we keep the logs
 sys.stdout=Unbuffered(sys.stdout)
 
@@ -204,11 +218,11 @@ print('Combining ugriz variability results for forced photometry lightcurves fro
 
 # Get E(B-V) : once for all objects across all patches 
 ebv_file = 'ebv_'+site+'_lt235.dat'
-ebv = pd.read_table(dir_info+ebv_file, delimiter=' ', usecols=[0,1])
+ebv = pd.read_table(DirEBV+ebv_file, delimiter=' ', usecols=[0,1])
 ebv.columns = ['objectId','ebv']
 
 
-def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, dir_var=dir_var, 
+def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, DirIn=DirIn, 
     ebv_file =  ebv_file, limitNrows = None):
     '''
 
@@ -221,7 +235,7 @@ def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, dir_var=dir_var,
     varPatchesDF - a data frame storing the results of calculation. Initially there is 
          none, and each consecutive patch gets appended to that data frame, which 
          is the main result of running this function 
-    dir_var -  Directory storing the results of full LC statistics...
+    DirIn -  Directory storing the results of full LC statistics...
    
     ebv_file - name of a file with E(B-V) values for each object in a given 
           data source . It's solely used to print out below information about
@@ -249,7 +263,7 @@ def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, dir_var=dir_var,
     # if nrows = None , pd.read_csv() reads the entire file 
     for filter in 'ugriz':
         File = args.var +filter+patch+'.csv'
-        varPatch[filter] = pd.read_csv(dir_var+File, nrows=limitNrows, 
+        varPatch[filter] = pd.read_csv(DirIn+File, nrows=limitNrows, 
                                        low_memory=False)  
   
     # Check if each patch-filter file has exactly the same number of 
@@ -368,7 +382,7 @@ if args.pe :
     print('Using only %d patches for testing : '%args.pe)
     print(patches)
 
-# FUTURE : may add here checking the dir_var  for 
+# FUTURE : may add here checking the DirIn  for 
 # whatever is present, and process only the present 
 # files ... 
 
@@ -398,12 +412,12 @@ for patch in patches[1:]:
 #
 # Add ra, dec , extendedness information 
 #
-fname = dir_info+'DeepSource'+site+'_i_lt235_extendedness.csv.gz'
+fname = DirEBV+'DeepSource'+site+'_i_lt235_extendedness.csv.gz'
 deep_source_ext = pd.read_csv(fname, compression='gzip', index_col=0)
 # np.ravel(deep_source_ext.columns) = array(['deepSourceId', 'extendedness'],
 # dtype=object)
 
-fname = dir_info+'DeepSource'+site+'_i_lt235_narrow.csv.gz' 
+fname = DirEBV+'DeepSource'+site+'_i_lt235_narrow.csv.gz' 
 deep_source_radec = pd.read_csv(fname, compression='gzip', index_col=0)
 # np.ravel(deep_source_radec.columns) = array(['parentDeepSourceId', 
 # 'deepCoaddId', 'ra', 'decl', 'psfMag',
@@ -431,7 +445,7 @@ varPatchesDF1 =  pd.merge(varPatchesDF,ext_radec, how='left',
 # and variability may be spurious 
 
 # Make sure we are keeping only objects without bright parents
-good_sources = np.load(dir_info+site+'_source_without_bright_parent.npy')
+good_sources = np.load(DirEBV+site+'_source_without_bright_parent.npy')
 mask_keep = np.in1d(varPatchesDF1.objectId.values , good_sources)
 
 varPatchesDF_save = varPatchesDF1[mask_keep]
@@ -459,7 +473,7 @@ if len(varPatchesDF_discard) > 0 :
     file_discard = args.var+'_ugriz_'+str(len(patches))+'_patches_'+site+\
                    '_discarded.csv.gz'
     print('\nWe save these objects separately, to  %s '%file_discard)
-    varPatchesDF_discard.to_csv(dir_save+file_discard , compression='gzip')
+    varPatchesDF_discard.to_csv(DirOut+file_discard , compression='gzip')
 
 if args.nc : 
     file_save = args.var+'_ugriz_'+str(len(patches))+'_patches_'+site+\
@@ -471,10 +485,10 @@ else:
                 '.csv.gz'
 
 print('\We save the  %d objects without bright parents to %s'%\
-      (len(varPatchesDF_save), dir_save+file_save))
+      (len(varPatchesDF_save), DirOut+file_save))
 
 # This is the main product : across filters and patches merged file... 
-varPatchesDF_save.to_csv(dir_save+file_save, compression='gzip' ) 
+varPatchesDF_save.to_csv(DirOut+file_save, compression='gzip' ) 
 
 
 
