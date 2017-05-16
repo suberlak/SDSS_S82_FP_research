@@ -83,6 +83,10 @@ parser.add_argument("-s", "-site",help="set the data processing center from \
                     which to use the data",  action ='store', default='1', 
                     choices=['NCSA', '1', 'IN2P3', '2'])
 
+# -single_patch : if we want to process only a single patch and then stop 
+parser.add_argument("-sp", "-single_patch",help="set the patch which we \
+                    should process",  action ='store', default=None, 
+                    type=str)
 
 # -nlines : if want to process only n lines from each band-patch file 
 parser.add_argument("-n", "-nlines", help="limit the number of rows to \
@@ -132,10 +136,14 @@ print('Site %s'%args.s)
 if args.n:
     print('Nlines : %d'%args.n)
 
-if args.p : 
-    print('Starting from the patch #%d '%args.p)
+if args.ps : 
+    print('Starting from the patch #%d '%args.ps)
 
+if args.pe : 
+    print('Ending from the patch #%d '%args.pe)
 
+if args.sp : 
+    print('Only processing patch %s'%args.sp)
 
 # Need this to locate my packages ...
 # Also , set the input and output
@@ -170,7 +178,6 @@ import processPatch2 as procP
 
 
 # Define patches which we will process in this run ... 
-filter_patch_files = []
 if args.s in ['1', 'NCSA']:
     patches = ['00_21', '22_43','44_65', '66_87' ,'88_109','110_131', '132_153', 
                '154_175',  '176_181', '365_387', '388_409'] 
@@ -180,20 +187,24 @@ if args.s in ['2', 'IN2P3']:
                '281_302', '302_323','323_344', '344_365', '365_386']  
 
  # patch selection... 
-if args.p :
+if args.ps :
     if args.pe : 
         # select patches m to n 
-        patches = patches[args.p:args.pe]
+        patches = patches[args.ps:args.pe]
     else:
         # select from m-th patch onwards
-        patches = patches[args.p:] 
+        patches = patches[args.ps:] 
 elif args.pe : 
     # select up to n-th patch 
     patches = patches[:args.pe]
 
-for patch in patches  :
-    for filter in 'ugriz':  
-        filter_patch_files.append(filter + patch + '.csv')
+if args.sp  : 
+    filter_patch_files = [args.sp]
+else : 
+    filter_patch_files = []
+    for patch in patches  :
+        for filter in 'ugriz':  
+            filter_patch_files.append(filter + patch + '.csv')
 
 #  check for already processed files, 
 #  need to provide -pre argument 
