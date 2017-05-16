@@ -178,7 +178,7 @@ ebv.columns = ['objectId','ebv']
 
 
 def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, dir_var=dir_var, 
-    ebv_file =  ebv_file, limitNrows = None, narrow = None):
+    ebv_file =  ebv_file, limitNrows = None):
     '''
 
     Input
@@ -198,9 +198,7 @@ def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, dir_var=dir_var,
     limitNrows - for testing, do we want to only take N rows from each filter-file, 
           to speed up calculation (eg, merge ugriz on a given patch for only 
           N=100 objects to test the code )
-    narrow - if not None  (eg. True), we limit the output file as to how many columns
-          we grab, to make the output file smaller, especially when merging across many
-          patches... 
+   
 
     Returns
     ------------
@@ -294,14 +292,20 @@ def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, dir_var=dir_var,
     # area of the sky .... 
 
 
-    if narrow : 
+    if args.nc : 
         # instead of dropping what we don't want, I choose 
         # explicitly columns to keep ... 
         filters = 'ugriz'
         cols = ['N', 'chi2DOF', 'chi2R', 'muFull', 'psfMeanErr', 
                 'psfMean_corr']
+        suffix = ['_bright', '_all']
+        
+        if args.var == 'Var' : 
+            cols_save = [f+c for f in filters for c in cols]
 
-        cols_save = [f+c for f in filters for c in cols]
+        elif args.var in ['VarC_', 'VarD_'] :
+            cols_save = [f+c+s for f in filters for c in cols for s in suffix]
+
         cols_save.append('ebv')
         cols_save.append('objectId')
         varPatchSave = varPatchAll.loc[:, cols_save]
