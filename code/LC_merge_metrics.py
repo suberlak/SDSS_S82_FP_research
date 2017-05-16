@@ -423,12 +423,12 @@ mask_missing_input = np.in1d(needed_files, available_files)
 if np.sum(~mask_missing_input) > 0 : 
     print('%d of these are not available in the input \
         directory'%np.sum(~mask_missing_input))
-    print('--> we process only the available patch-files:')
+    print('--> we check these patch-files:')
     use_files= np.array(needed_files)[mask_missing_input]
     print(use_files)
 
 # we can only merge files if there are 5 patch files per patch
-print('--> we found that only for these patches there is \
+print('--> but we found that only for these patches there is \
     data in all five bands :')
 p, count = np.unique([a[prefix_length+1:-4] for a in use_files],
     return_counts = True)
