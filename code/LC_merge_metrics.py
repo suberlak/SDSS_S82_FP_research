@@ -345,9 +345,12 @@ from %s'%(allOBJ, withEBV, ebv_file))
     if args.nc : 
         # instead of dropping what we don't want, I choose 
         # explicitly columns to keep ... 
+
+        print('Choosing only to keep the following : ')
         filters = 'ugriz'
         cols = ['N', 'chi2DOF', 'chi2R', 'muFull', 'psfMeanErr', 
-                'psfMean_corr']
+                'psfMean_corr', 'meanSN']
+        print(cols)
         suffix = ['_bright', '_all']
 
         if args.var == 'Var' : 
@@ -358,6 +361,10 @@ from %s'%(allOBJ, withEBV, ebv_file))
 
         cols_save.append('ebv')
         cols_save.append('objectId')
+        # note :  if a given column does not exist in 
+        # varPatchAll,  then  that column in 
+        # varPatchSave becomes filled with NaNs
+        # 
         varPatchSave = varPatchAll.loc[:, cols_save]
     else:
         varPatchSave = varPatchAll
@@ -501,7 +508,7 @@ varPatchesDF_save = varPatchesDF1[mask_keep]
 varPatchesDF_discard = varPatchesDF1[~mask_keep]
 
 
-print('Out of total number of %d objects, with combined metrics across ugriz\
+print('Out of total number of %d objects, with combined metrics across ugriz \
 filters and  %d patches '%
       (len(varPatchesDF1), len(patches)))
 
@@ -533,11 +540,10 @@ else:
     file_save = args.var+'_ugriz_'+str(len(patches))+'_patches_'+site+\
                 '.csv.gz'
 
-print('We save the  %d objects without bright parents to %s'%\
-      (len(varPatchesDF_save), DirOut+file_save))
-
 # This is the main product : across filters and patches merged file... 
 varPatchesDF_save.to_csv(DirOut+file_save, compression='gzip' ) 
 
+print('We saved the  %d objects without bright parents to %s'%\
+      (len(varPatchesDF_save), DirOut+file_save))
 
 
