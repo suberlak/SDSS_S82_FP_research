@@ -11,7 +11,8 @@
 #
 # OUTPUT: processed forced photometry lightcurves,  with unchanged flux, etc,
 # but with additional columns  :
-# ['objectId', 'mjd', 'psfFlux', 'psfFluxErr', 'flag','faintMean','faintMedian','faintTwoSigma']  
+# ['objectId', 'mjd', 'psfFlux', 'psfFluxErr', 'flag','faintMean','faintMedian',
+#  'faintTwoSigma']  
 
 
 
@@ -67,40 +68,50 @@ sys.stdout=Unbuffered(sys.stdout)
 
 
 ### Initialize the ArgumentParser   
-parser = argparse.ArgumentParser(description='Process the patch files from S82 ... ')
+desc  = 'Process the patch files from S82 ... '
+parser = argparse.ArgumentParser(description=desc)
 
 # -env :  environment : either mac , m ,   or typhoon, t
 #      by default, it is mac, hence optional 
-parser.add_argument("-e", "-env", "-environment", help="set the execution environment", action="store",
-                    default = 'm', choices=['t', 'typhoon', 'm', 'mac'])
+parser.add_argument("-e", "-env", "-environment", help="set the execution \
+                    environment", action="store", default = 'm', 
+                    choices=['t', 'typhoon', 'm', 'mac'])
 
 
 # -site  : site: NCSA ,1    or IN2P3 , 2  
-parser.add_argument("-s", "-site",help="set the data processing center from which to use the data", 
-                    action ='store', default='1', choices=['NCSA', '1', 'IN2P3', '2'])
+parser.add_argument("-s", "-site",help="set the data processing center from \
+                    which to use the data",  action ='store', default='1', 
+                    choices=['NCSA', '1', 'IN2P3', '2'])
 
 
 # -nlines : if want to process only n lines from each band-patch file 
-parser.add_argument("-n", "-nlines", help="limit the number of rows to process in each patch-file",
-                    action="store", default=None, type=int)
+parser.add_argument("-n", "-nlines", help="limit the number of rows to \
+                    process in each patch-file", action="store", default=None, 
+                    type=int)
 
-# -patch_start : which patch to start the processing with? Useful in case the processing 
-#    got interrupted ( alternatively would have to check the outDir for 
+# -patch_start : which patch to start the processing with? Useful in case the 
+#     processing  got interrupted ( alternatively would have to check the 
+#     outDir for 
 #    what already exists, and remove those that already exist from the 
 #    list of patches to process... )
-parser.add_argument("-p", "-patch_start", "-ps", help='set which patch to start from, given their alphabetical ordering',
-                    action="store", default=None, type=int, choices = range(0,11))
+parser.add_argument("-p", "-patch_start", "-ps", help='set which patch to \
+                    start from, given their alphabetical ordering', 
+                    action="store", default=None, type=int, 
+                    choices = range(0,11))
 
 # -cd : check outDir  if yes  (default no),  it would run the check of files 
 #    that startwith  -pre
-parser.add_argument("-cd", "-check_dir", help='check the output directory for which patch-files have already been processed? If so, also need to set the -pre  variable indicating the prefix of the outfiles to be checked ',
-    action='store_true')
+parser.add_argument("-cd", "-check_dir", help='check the output directory for \
+                    which patch-files have already been processed? If so, also \
+                    need to set the -pre  variable indicating the prefix of \
+                    the outfiles to be checked ', action='store_true')
 
 # -pre : prefix to check outDir for ... , eg  VarD_ .  This is the string before 
 #     g00_21.csv   string. 
 
-parser.add_argument("-pre", "-prefix", help = 'set the prefix for output files to be checked for which patches have already been processed',
-    action='store', default='VarD_', type=str)
+parser.add_argument("-pre", "-prefix", help = 'set the prefix for output \
+                    files to be checked for which patches have already been \
+                    processed', action='store', default='VarD_', type=str)
 
 # parse all arguments : do it only once in an entire program ... 
 args = parser.parse_args()
@@ -129,7 +140,7 @@ elif args.s in ['2', 'IN2P3']:
 if args.e in  ['m', 'mac'] : 
     path_to_home = '/Users/chris/GradResearch/'
     DirIn = '/Users/chris/GradResearch/SDSS_S82_FP_research/raw_data/rawDataFPSplit/'
-    DirOut = '/Users/chris/GradResearch/SDSS_S82_FP_research/data_products/'
+    DirOut = '/Users/chris/GradResearch/SDSS_S82_FP_research/data_products/varMetrics/'
 
 elif args.e in ['t','typhoon'] :
     path_to_home = '/astro/users/suberlak/' 
@@ -155,8 +166,8 @@ if args.s in ['1', 'NCSA']:
                '154_175',  '176_181', '365_387', '388_409'] 
 
 if args.s in ['2', 'IN2P3']:
-    patches = ['155_176', '176_197','197_218', '218_239', '239_260', '260_281', '281_302', 
-               '302_323','323_344', '344_365', '365_386']  
+    patches = ['155_176', '176_197','197_218', '218_239', '239_260', '260_281', 
+               '281_302', '302_323','323_344', '344_365', '365_386']  
 
 # select from N-th patch onwards 
 if args.p :
@@ -208,7 +219,8 @@ if np.sum(~mask_missing_input) > 0 :
 # Run this for processing : calculation of over 27 metrics per lightcurve per band 
 for name in filter_patch_files :
     if args.n :
-        procP.process_patch(name, DirIn, DirOut, calc_sigma_pdf=False, limitNrows=args.n)
+        procP.process_patch(name, DirIn, DirOut, calc_sigma_pdf=False, 
+                            limitNrows=args.n)
     else : 
         procP.process_patch(name, DirIn, DirOut, calc_sigma_pdf=False)
 
