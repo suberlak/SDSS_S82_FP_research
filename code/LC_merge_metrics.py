@@ -2,6 +2,7 @@
 # Necessary imports 
 import pandas as pd
 import numpy as np 
+from itertools import product
 from pandas import compat
 import os 
 #
@@ -403,17 +404,30 @@ print('Attempting to merge metrics for the following patches :')
 print(patches)
 
 # Check if the input files are present ... 
-# assume that the files end with .gz, since 
-# the raw FP lightcurves are compressed ... 
-list_input = os.listdir(DirIn)
+# need all ugriz per patch to make merged file... 
+
+needed_files = [] 
+for patch, filter in product(patches, 'ugriz') :
+    needed_files.append(args.var +filter+patch+'.csv')
+print('This means that we need %d metrics files \
+ (5 per patch) '%len(needed_files))
+
+
+# list the input dir.. 
+available_files = os.listdir(DirIn)
 prefix_length = len(args.var)
-available_files = [name[prefix_length+1:-4] for name in list_input]
-mask_missing_input = np.in1d(patches, available_files)
+mask_missing_input = np.in1d(needed_files, available_files)
 if np.sum(~mask_missing_input) > 0 : 
-    print('%d of these are not in the input directory'%np.sum(~mask_missing_input))
-    print('So we process only the present patch-files:')
-    patches= np.array(patches)[mask_missing_input]
-    print(patches)
+    print('%d of these are not available in the input \
+        directory'%np.sum(~mask_missing_input))
+    print('--> we process only the available patch-files:')
+    use_files= np.array(needed_files)[mask_missing_input]
+    print(use_files)
+
+use_patches = np.unique([a[prefix_length+1:-4] for a in use_files])
+patches = np.array(patches)[np.in1d(patches, use_patches)]
+print('--> there is enough data to merge  only the following patches:')
+print(patches)
 
 #  
 # Run the first patch to start the storage DF 
