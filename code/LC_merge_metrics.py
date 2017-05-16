@@ -246,19 +246,12 @@ def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, dir_var=dir_var,
     # from computeVarMetrics() in ../packages/variabilityFunctions.py
 
     varPatch = {}
-
-    if limitNrows is not None : 
-        for filter in 'ugriz':
-            File = args.var +filter+patch+'.csv'
-            varPatch[filter] = pd.read_csv(dir_var+File, nrows=limitNrows, 
-                                           low_memory=False)  
-    else: 
-        for filter in 'ugriz':
-            File = args.var +filter+patch+'.csv'
-            varPatch[filter] = pd.read_csv(dir_var+File, 
-                                           low_memory=False)  
-     
-
+    # if nrows = None , pd.read_csv() reads the entire file 
+    for filter in 'ugriz':
+        File = args.var +filter+patch+'.csv'
+        varPatch[filter] = pd.read_csv(dir_var+File, nrows=limitNrows, 
+                                       low_memory=False)  
+  
     # Check if each patch-filter file has exactly the same number of 
     #  objects... 
     for filter in 'ugriz':
