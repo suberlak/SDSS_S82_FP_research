@@ -72,8 +72,10 @@ desc  = 'Process the patch files from S82 ... '
 parser = argparse.ArgumentParser(description=desc)
 
 # -env :  environment : either mac , m ,   or typhoon, t
-#      by default, it is mac, hence optional 
-parser.add_argument("-e", "-env", "-environment", help="set the execution \
+#      by default, it is mac, hence optional , 
+#      but strongly recommended since it will be only 
+#      correct if it is actually run on the Mac
+parser.add_argument("-e", "-environment", help="set the execution \
                     environment", action="store", default = 'm', 
                     choices=['t', 'typhoon', 'm', 'mac'])
 
@@ -83,15 +85,31 @@ parser.add_argument("-s", "-site",help="set the data processing center from \
                     which to use the data",  action ='store', default='1', 
                     choices=['NCSA', '1', 'IN2P3', '2'])
 
+# -nlines : if want to process only n lines from each band-patch file 
+parser.add_argument("-n", "-nlines", help="limit the number of rows to \
+                    process in each patch-file", action="store", default=None, 
+                    type=int)
+
+#
+# The following args set which patches should be processed  : 
+#
+# 1) a single_patch : need to provide a name 
+# 2) knowing the list_of_patches per processing center, 
+#    process only  list_of_patches[patch_start : patch_end]
+#    by default,  we process all patches 
+# 3) process only patches which do not yet have the Var.. 
+#    metrics files in the output directory  : set -cd ,  and
+#    provide the -pre  prefix for output filenames to 
+#    check.  We assume that output of LC_processing.py 
+#    follows the following naming scheme : 
+#    pre + filter + patch + .csv ,   eg. VarD_i00_21.csv 
+
 # -single_patch : if we want to process only a single patch and then stop 
 parser.add_argument("-sp", "-single_patch",help="set the patch which we \
                     should process",  action ='store', default=None, 
                     type=str)
 
-# -nlines : if want to process only n lines from each band-patch file 
-parser.add_argument("-n", "-nlines", help="limit the number of rows to \
-                    process in each patch-file", action="store", default=None, 
-                    type=int)
+
 
 # -patch_start : which patch to start the processing with? Useful if we want to 
 #    process from N to end of the alphabetic list of patches,
