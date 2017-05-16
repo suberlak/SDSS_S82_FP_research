@@ -90,20 +90,22 @@ parser = argparse.ArgumentParser(description=desc)
 # -env :  environment : either mac , m ,   or typhoon, t
 #      by default, it is mac, hence optional 
 parser.add_argument("-e", "-env", "-environment", help="set the execution \
-                    environment", action="store", default = 'm', 
-                    choices=['t', 'typhoon', 'm', 'mac'])
+                    environment (default: %(default)s)", action="store", 
+                    default = 'm',  choices=['t', 'typhoon', 'm', 'mac'])
 
 
 # -site  : site: NCSA ,1    or IN2P3 , 2  
 parser.add_argument("-s", "-site",help="set the data processing center from \
-                    which to use the data",  action ='store', default='1', 
-                    choices=['NCSA', '1', 'IN2P3', '2'])
+                    which to use the data (default: %(default)s)",  
+                    action ='store',  default='1',  choices=['NCSA', '1', 
+                    'IN2P3', '2'])
 
 # -var : prefix for metrics files of variable objects in the DirIn... by 
 # default, it is 'Var',  but could also be 'VarC_', 'VarD_', etc ...,
 # whatever was inherited from LC_processing.py
-parser.add_argument("-var", "-varfix", "-variable_prefix", help="set prefix for \
-                     metrics files which are to be merged by this program",
+parser.add_argument("-var", "-varfix", "-variable_prefix", help="set prefix \
+                     for metrics files which are to be merged by this program\
+                     (default: %(default)s)",
                      action='store', default='Var')
 
 # args limiting merger to a certain subset of the full metrics files. 
@@ -111,13 +113,14 @@ parser.add_argument("-var", "-varfix", "-variable_prefix", help="set prefix for 
 
 # -nlines : if want to process only n lines from each band-patch file 
 parser.add_argument("-n", "-nlines", help="limit the number of rows to \
-                    process in each patch-file", action="store", default=None, 
+                    process in each patch-file (default: %(default)s)", 
+                    action="store", default=None, 
                     type=int)
 
 # -ncols : do we want a narrow subset of cols to be merged ? boolean, if 
 # called it is true 
-parser.add_argument("-nc", "-narrow_cols", "-narrow", help='merge only a \
-                    narrow subset of columns ? ', action='store_true')
+parser.add_argument("-nc", "-narrow_cols", "-narrow", help='flag: merge \
+                    only a narrow subset of columns ? ', action='store_true')
 
 #
 # The following args set which patches should be processed  : 
@@ -135,14 +138,16 @@ parser.add_argument("-nc", "-narrow_cols", "-narrow", help='merge only a \
 
 # -single_patch : if we want to process only a single patch and then stop 
 parser.add_argument("-sp", "-single_patch",help="set the patch which we \
-                    should process",  action ='store', default=None, 
+                    should process (default: %(default)s)",  action ='store', 
+                    default=None, 
                     type=str)
 
 
 # -patch_start : which patch to start the processing with? If only want 
 #     to merge patches from  N to end.  Useful for testing 
-parser.add_argument("-ps", "-patch_start", "-ps", help='set which patch to \
-                    start from, given their alphabetical ordering', 
+parser.add_argument("-ps", "-patch_start", help='set which patch to \
+                    start from, given their alphabetical ordering \
+                    (default: %(default)s)', 
                     action="store", default=None, type=int, 
                     choices = range(0,11))
 
@@ -150,15 +155,17 @@ parser.add_argument("-ps", "-patch_start", "-ps", help='set which patch to \
 # only merge N patches instead of all for which 
 # aggregate metrics are available ? 
 parser.add_argument("-pe", "-patch_end", help="set how many patches to merge \
-                    if not all for which data is available", 
+                    if not all for which data is available \
+                    (default: %(default)s)", 
                     action='store', default = None, type=int, 
                     choices = range(0,11))
 
 
 # -cd : check outDir  if yes  (default no),  it would run the check of files 
 #    that startwith  -pre
-parser.add_argument("-cd", "-check_dir", help='check the output directory for \
-                    which patch-files have already been processed? If so, also \
+parser.add_argument("-cd", "-check_dir", help='flag : check the output \
+                     directory for which patch-files have already been \
+                    processed? If so, also \
                     need to set the -pre  variable indicating the prefix of \
                     the outfiles to be checked ', action='store_true')
 
@@ -167,7 +174,8 @@ parser.add_argument("-cd", "-check_dir", help='check the output directory for \
 #     g00_21.csv   string. 
 parser.add_argument("-pre", "-prefix", help = 'set the prefix for output \
                     files to be checked for which patches have already been \
-                    processed', action='store', default='VarD_', type=str)
+                    processed (default: %(default)s)', action='store', 
+                    default='VarD_', type=str)
 
 
 
