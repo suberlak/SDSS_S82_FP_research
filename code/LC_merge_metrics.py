@@ -3,7 +3,7 @@
 import pandas as pd
 import numpy as np 
 from pandas import compat
-
+import os 
 #
 # A program to merge ugriz variability statistics for NCSA and IN2P3, 
 # that are a result of running LC_processing.py,  stored in 
@@ -303,7 +303,7 @@ def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, DirIn=DirIn,
                      ebv['objectId'].values))
     allOBJ = len(varPatchugriz['objectId'].values)
     print('Of all %d objects with ugriz info, %d have E(B-V) values \
-           from %s'%(allOBJ, withEBV, ebv_file))
+from %s'%(allOBJ, withEBV, ebv_file))
 
     # Now this can be a left merge - I only want objects that can be 
     # extinction-corrected 
@@ -384,27 +384,47 @@ if site == 'IN2P3': # IN2P3 patches (11)
                '260_281', '281_302',  '302_323','323_344', '344_365', 
                '365_386']
 
-
-if args.pe : 
+# patch selection... 
+if args.ps :
+    if args.pe : 
+        # select patches m to n 
+        patches = patches[args.ps:args.pe]
+    else:
+        # select from m-th patch onwards
+        patches = patches[args.ps:] 
+elif args.pe : 
+    # select up to n-th patch 
     patches = patches[:args.pe]
-    print('Using only %d patches for testing : '%args.pe)
+
+if args.sp  : 
+    patches = [args.sp]
+
+print('Attempting to merge metrics for the following patches :')
+print(patches)
+
+# Check if the input files are present ... 
+# assume that the files end with .gz, since 
+# the raw FP lightcurves are compressed ... 
+list_input = os.listdir(DirIn)
+prefix_length = len(args.var)
+available_files = [name[prefix_length+1:-4] for name in list_input]
+mask_missing_input = np.in1d(patches, available_files)
+if np.sum(~mask_missing_input) > 0 : 
+    print('%d of these are not in the input directory'%np.sum(~mask_missing_input))
+    print('So we process only the present patch-files:')
+    patches= np.array(patches)[mask_missing_input]
     print(patches)
-
-# FUTURE : may add here checking the DirIn  for 
-# whatever is present, and process only the present 
-# files ... 
-
 
 #  
 # Run the first patch to start the storage DF 
 varPatchesDF=  add_patch(patch=patches[0], ebv = ebv, varPatchesDF = None, 
-                         limitNrows=args.n,  narrow=args.nc)
+                         limitNrows=args.n)
 
 # Loop over the rest of the patches to append to that DF 
 for patch in patches[1:]:
     varPatchesDF=  add_patch(patch=patch, ebv = ebv, 
                        varPatchesDF = varPatchesDF, 
-                       limitNrows=args.n, narrow = args.nc)
+                       limitNrows=args.n)
     
 # At this point, we have the following columns : 
 # ( if narrow  = True )
@@ -461,7 +481,7 @@ varPatchesDF_discard = varPatchesDF1[~mask_keep]
 
 
 print('Out of total number of %d objects, with combined metrics across ugriz\
-       filters and  %d patches '%
+filters and  %d patches '%
       (len(varPatchesDF1), len(patches)))
 
 print('There are %d that have a parent i<17 mag, which are discarded' % \
@@ -492,7 +512,7 @@ else:
     file_save = args.var+'_ugriz_'+str(len(patches))+'_patches_'+site+\
                 '.csv.gz'
 
-print('\We save the  %d objects without bright parents to %s'%\
+print('We save the  %d objects without bright parents to %s'%\
       (len(varPatchesDF_save), DirOut+file_save))
 
 # This is the main product : across filters and patches merged file... 
