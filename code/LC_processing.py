@@ -90,25 +90,12 @@ parser.add_argument("-n", "-nlines", help="limit the number of rows to \
                     type=int)
 
 # -patch_start : which patch to start the processing with? Useful if we want to 
-#    process from N to end,  and not from 0 to end.  
-parser.add_argument("-p", "-patch_start", "-ps", help='set which patch to \
+#    process from N to end of the alphabetic list of patches,
+#    and not from 0 to end.  
+parser.add_argument("-ps", "-patch_start", help='set which patch to \
                     start from, given their alphabetical ordering', 
                     action="store", default=None, type=int, 
                     choices = range(0,11))
-
-# -cd : check outDir  if yes  (default no),  it would run the check of files 
-#    that startwith  -pre
-parser.add_argument("-cd", "-check_dir", help='check the output directory for \
-                    which patch-files have already been processed? If so, also \
-                    need to set the -pre  variable indicating the prefix of \
-                    the outfiles to be checked ', action='store_true')
-
-# -pre : prefix to check outDir for ... , eg  VarD_ .  This is the string before 
-#     g00_21.csv   string. 
-
-parser.add_argument("-pre", "-prefix", help = 'set the prefix for output \
-                    files to be checked for which patches have already been \
-                    processed', action='store', default='VarD_', type=str)
 
 # -patch_end : if only want to merge patches from 0 to N  ....  
 # only merge N patches instead of all for which 
@@ -117,6 +104,24 @@ parser.add_argument("-pe", "-patch_end", help="set how many patches to merge \
                     if not all for which data is available", 
                     action='store', default = None, type=int, 
                     choices = range(0,11))
+
+# -cd : check outDir  if yes  (default no),  it would run the check of files 
+#    that startwith  -pre
+parser.add_argument("-cd", "-check_dir", help='check the output directory for \
+                    which patch-files have already been processed? If so, also \
+                    need to set the -pre  variable indicating the prefix of \
+                    the outfiles to be checked. By default it is VarD_ ', 
+                    action='store_true')
+
+# -pre : if before processing the raw lightcurve files you would like to 
+#   check the outDir which processed files already exits,  you need to 
+#   provide a prefix for output files, eg  VarD_ .  This is the string before 
+#     g00_21.csv 
+parser.add_argument("-pre", "-prefix", help = 'set the prefix for output \
+                    files to be checked for which patches have already been \
+                    processed', action='store', default='VarD_', type=str)
+
+
 
 # parse all arguments : do it only once in an entire program ... 
 args = parser.parse_args()
