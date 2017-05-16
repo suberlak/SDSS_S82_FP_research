@@ -70,6 +70,9 @@ class Unbuffered:
 desc  = 'Process the patch files from S82 ... '
 parser = argparse.ArgumentParser(description=desc)
 
+# Args setting the environment variables : 
+# location of input and  output, etc. 
+
 # -env :  environment : either mac , m ,   or typhoon, t
 #      by default, it is mac, hence optional 
 parser.add_argument("-e", "-env", "-environment", help="set the execution \
@@ -82,46 +85,52 @@ parser.add_argument("-s", "-site",help="set the data processing center from \
                     which to use the data",  action ='store', default='1', 
                     choices=['NCSA', '1', 'IN2P3', '2'])
 
+# -var : prefix for metrics files of variable objects in the DirIn... by 
+# default, it is 'Var',  but could also be 'VarC_', 'VarD_', etc ...,
+# whatever was inherited from LC_processing.py
+parser.add_argument("-var", "-varfix", "-variable_prefix", help="set prefix for \
+                     metrics files which are to be merged by this program",
+                     action='store', default='Var')
+
+# args limiting merger to a certain subset of the full metrics files. 
+# useful for testing, or for making smaller merged metrics files 
 
 # -nlines : if want to process only n lines from each band-patch file 
 parser.add_argument("-n", "-nlines", help="limit the number of rows to \
                     process in each patch-file", action="store", default=None, 
                     type=int)
 
-# -patch_start : which patch to start the processing with? If only want 
-#     to merge patches from  N to end.  Useful for testing 
-parser.add_argument("-p", "-patch_start", "-ps", help='set which patch to \
-                    start from, given their alphabetical ordering', 
-                    action="store", default=None, type=int, 
-                    choices = range(0,11))
-
-# -cd : check outDir  if yes  (default no),  it would run the check of files 
-#    that startwith  -pre
-parser.add_argument("-cd", "-check_dir", help='check the output directory for \
-                    which patch-files have already been processed? If so, also \
-                    need to set the -pre  variable indicating the prefix of \
-                    the outfiles to be checked ', action='store_true')
-
-# -var : prefix for metrics files of variable objects in the DirIn... by 
-# default, it is 'Var',  but could also be 'VarC_', 'VarD_', etc ...,
-# whatever was inherited from LC_processing.py
-parser.add_argument("-var", "-variable_prefix", help="set prefix for metrics \
-                     files which are to be merged by this program",
-                     action='store', default='Var')
-
-
-# -pre : prefix to check outDir for ... , eg  VarD_ .  This is the string before 
-#     g00_21.csv   string. 
-
-parser.add_argument("-pre", "-prefix", help = 'set the prefix for output \
-                    files to be checked for which patches have already been \
-                    processed', action='store', default='VarD_', type=str)
-
-
 # -ncols : do we want a narrow subset of cols to be merged ? boolean, if 
 # called it is true 
 parser.add_argument("-nc", "-narrow_cols", "-narrow", help='merge only a \
                     narrow subset of columns ? ', action='store_true')
+
+#
+# The following args set which patches should be processed  : 
+#
+# 1) a single_patch : need to provide a name 
+# 2) knowing the list_of_patches per processing center, 
+#    process only  list_of_patches[patch_start : patch_end]
+#    by default,  we process all patches 
+# 3) process only patches which do not yet have the Var.. 
+#    metrics files in the output directory  : set -cd ,  and
+#    provide the -pre  prefix for output filenames to 
+#    check.  We assume that output of LC_processing.py 
+#    follows the following naming scheme : 
+#    pre + filter + patch + .csv ,   eg. VarD_i00_21.csv 
+
+# -single_patch : if we want to process only a single patch and then stop 
+parser.add_argument("-sp", "-single_patch",help="set the patch which we \
+                    should process",  action ='store', default=None, 
+                    type=str)
+
+
+# -patch_start : which patch to start the processing with? If only want 
+#     to merge patches from  N to end.  Useful for testing 
+parser.add_argument("-ps", "-patch_start", "-ps", help='set which patch to \
+                    start from, given their alphabetical ordering', 
+                    action="store", default=None, type=int, 
+                    choices = range(0,11))
 
 # -patch_end : if only want to merge patches from 0 to N  ....  
 # only merge N patches instead of all for which 
@@ -130,6 +139,22 @@ parser.add_argument("-pe", "-patch_end", help="set how many patches to merge \
                     if not all for which data is available", 
                     action='store', default = None, type=int, 
                     choices = range(0,11))
+
+
+# -cd : check outDir  if yes  (default no),  it would run the check of files 
+#    that startwith  -pre
+parser.add_argument("-cd", "-check_dir", help='check the output directory for \
+                    which patch-files have already been processed? If so, also \
+                    need to set the -pre  variable indicating the prefix of \
+                    the outfiles to be checked ', action='store_true')
+
+
+# -pre : prefix to check outDir for ... , eg  VarD_ .  This is the string before 
+#     g00_21.csv   string. 
+parser.add_argument("-pre", "-prefix", help = 'set the prefix for output \
+                    files to be checked for which patches have already been \
+                    processed', action='store', default='VarD_', type=str)
+
 
 
 # parse all arguments : do it only once in an entire program ... 
@@ -141,8 +166,14 @@ print('Site %s'%args.s)
 if args.n:
     print('Nlines : %d'%args.n)
 
-if args.p : 
-    print('Starting from the patch #%d '%args.p)
+if args.ps : 
+    print('Starting from the patch #%d '%args.ps)
+
+if args.pe : 
+    print('Ending from the patch #%d '%args.pe)
+
+if args.sp : 
+    print('Only processing patch %s'%args.sp)
 
 
 if args.s in ['1', 'NCSA'] : 
@@ -299,7 +330,7 @@ def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, dir_var=dir_var,
         cols = ['N', 'chi2DOF', 'chi2R', 'muFull', 'psfMeanErr', 
                 'psfMean_corr']
         suffix = ['_bright', '_all']
-        
+
         if args.var == 'Var' : 
             cols_save = [f+c for f in filters for c in cols]
 
