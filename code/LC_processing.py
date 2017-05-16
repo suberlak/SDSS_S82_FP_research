@@ -89,11 +89,8 @@ parser.add_argument("-n", "-nlines", help="limit the number of rows to \
                     process in each patch-file", action="store", default=None, 
                     type=int)
 
-# -patch_start : which patch to start the processing with? Useful in case the 
-#     processing  got interrupted ( alternatively would have to check the 
-#     outDir for 
-#    what already exists, and remove those that already exist from the 
-#    list of patches to process... )
+# -patch_start : which patch to start the processing with? Useful if we want to 
+#    process from N to end,  and not from 0 to end.  
 parser.add_argument("-p", "-patch_start", "-ps", help='set which patch to \
                     start from, given their alphabetical ordering', 
                     action="store", default=None, type=int, 
@@ -112,6 +109,14 @@ parser.add_argument("-cd", "-check_dir", help='check the output directory for \
 parser.add_argument("-pre", "-prefix", help = 'set the prefix for output \
                     files to be checked for which patches have already been \
                     processed', action='store', default='VarD_', type=str)
+
+# -patch_end : if only want to merge patches from 0 to N  ....  
+# only merge N patches instead of all for which 
+# aggregate metrics are available ? 
+parser.add_argument("-pe", "-patch_end", help="set how many patches to merge \
+                    if not all for which data is available", 
+                    action='store', default = None, type=int, 
+                    choices = range(0,11))
 
 # parse all arguments : do it only once in an entire program ... 
 args = parser.parse_args()
@@ -169,10 +174,17 @@ if args.s in ['2', 'IN2P3']:
     patches = ['155_176', '176_197','197_218', '218_239', '239_260', '260_281', 
                '281_302', '302_323','323_344', '344_365', '365_386']  
 
-# select from N-th patch onwards 
+ # patch selection... 
 if args.p :
-    patches = patches[args.p:] 
-
+    if args.pe : 
+        # select patches m to n 
+        patches = patches[args.p:args.pe]
+    else:
+        # select from m-th patch onwards
+        patches = patches[args.p:] 
+elif args.pe : 
+    # select up to n-th patch 
+    patches = patches[:args.pe]
 
 for patch in patches  :
     for filter in 'ugriz':  
