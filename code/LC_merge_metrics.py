@@ -534,8 +534,8 @@ if len(varPatchesDF_discard) > 0 :
 if args.nc : 
     file_save = args.var+'_ugriz_'+str(len(patches))+'_patches_'+site+\
                 '_narrow.csv.gz'
-    print('\nSaving only selected columns : ')
-    print(np.ravel(varPatchesDF_save.columns))
+    print('\nSaving only narrow version of columns ')
+    # print(np.ravel(varPatchesDF_save.columns))
 else:
     file_save = args.var+'_ugriz_'+str(len(patches))+'_patches_'+site+\
                 '.csv.gz'

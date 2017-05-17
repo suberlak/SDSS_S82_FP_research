@@ -42,6 +42,7 @@
 # make all necessary imports....
 import os 
 import numpy as np
+from itertools import product
 import sys
 import datetime
 import argparse
@@ -70,6 +71,9 @@ sys.stdout=Unbuffered(sys.stdout)
 ### Initialize the ArgumentParser   
 desc  = 'Process the patch files from S82 ... '
 parser = argparse.ArgumentParser(description=desc)
+
+# Args setting the environment variables : 
+# location of input and  output, etc. 
 
 # -env :  environment : either mac , m ,   or typhoon, t
 #      by default, it is mac, hence optional , 
@@ -204,7 +208,7 @@ if args.s in ['2', 'IN2P3']:
     patches = ['155_176', '176_197','197_218', '218_239', '239_260', '260_281', 
                '281_302', '302_323','323_344', '344_365', '365_386']  
 
- # patch selection... 
+# patch selection... 
 if args.ps :
     if args.pe : 
         # select patches m to n 
@@ -220,9 +224,8 @@ if args.sp  :
     filter_patch_files = [args.sp]
 else : 
     filter_patch_files = []
-    for patch in patches  :
-        for filter in 'ugriz':  
-            filter_patch_files.append(filter + patch + '.csv')
+    for patch, filter in product(patches,'ugriz') :
+        filter_patch_files.append(filter + patch + '.csv')
 
 #  check for already processed files, 
 #  need to provide -pre argument 
