@@ -224,7 +224,7 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
 
     # instead of two-steps, make just one : 
     SN = raw_data['psfFluxJy'].data / raw_data['psfFluxErrJy'].data
-    mask_SN = SN < 2 
+    mask_SN = SN.data < 2 
     raw_data['flagFaint'] = mask_SN
     print('There are %d points of %d that have S/N < 2' %(np.sum(mask_SN),\
         len(mask_SN)))
@@ -267,8 +267,8 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
     # make sure we are only taking values  that are not NaN ... 
     #mask_NaNs = np.bitwise_not(np.isnan(raw_data['faintRMS'][mask_SN]))
 
-    raw_data['psfFluxJy'][mask_SN] = raw_data['faintMean'][mask_SN]
-    raw_data['psfFluxErrJy'][mask_SN] = raw_data['faintRMS'][mask_SN]
+    raw_data['psfFluxJy'][mask_SN] = raw_data['faintMean'][mask_SN].data.data
+    raw_data['psfFluxErrJy'][mask_SN] = raw_data['faintRMS'][mask_SN].data.data
 
     #
     ##########  STEP 2 : Derived Quantities ###########  
@@ -291,7 +291,7 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
 
     # 2.2 Calculate stats for LC using only bright points 
     print('Calculating the  LC statistics using S/N > 2  points only ...')
-    mask_bright = ~raw_data_df['flagFaint'].values
+    mask_bright = np.bitwise_not(raw_data_df['flagFaint'].values.astype(bool))
     bright_grouped = raw_data_df[mask_bright].groupby('objectId')
     varMetricsFull_bright  = bright_grouped.apply(varF.computeVarMetrics, 
                                                   flux_column='psfFluxJy',
