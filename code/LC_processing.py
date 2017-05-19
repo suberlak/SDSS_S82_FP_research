@@ -193,7 +193,8 @@ elif args.e in ['t','typhoon'] :
 # only once path_to_home is added as a searchable path
 sys.path.insert(0, path_to_home + 'SDSS_S82_FP_research/packages/')
 import processPatch2 as procP
-
+import imp
+imp.reload(procP)
 #####
 #####  PROCESSING FILES
 #####  
@@ -251,27 +252,41 @@ if args.cd :
 
 print('Starting to process the following patch-files:')
 print(filter_patch_files)
-print('From the input directory %s'%DirIn)
+print('\nThe following is available from  the input directory ')
+print(DirIn)
 
 # Check if the input files are present ... 
 # assume that the files end with .gz, since 
 # the raw FP lightcurves are compressed ... 
 list_input = os.listdir(DirIn)
-list_csv = [name[:-3] for name in list_input]
+mask_gz = np.array([a.endswith('.gz') for a in list_input])
+list_gz = np.array(list_input)[mask_gz]
+list_csv = [name[:-3] for name in list_gz]
+print(list_csv)
+
 mask_missing_input = np.in1d(filter_patch_files, list_csv)
 if np.sum(~mask_missing_input) > 0 : 
-    print('%d of these are not in the input directory'%np.sum(~mask_missing_input))
-    print('So we process only the present patch-files:')
+    print('\n%d of the selected patch files  are not in the input \
+directory'%np.sum(~mask_missing_input))
+else: 
+    print('All of the selected patch files are available in the \
+input directory')
+
+if np.sum(mask_missing_input) > 0:
+    print('We process the present patch-files:')
     filter_patch_files = np.array(filter_patch_files)[mask_missing_input]
     print(filter_patch_files)
 
-# Run this for processing : calculation of over 27 metrics per lightcurve per band 
-for name in filter_patch_files :
-    if args.n :
-        procP.process_patch(name, DirIn, DirOut, calc_sigma_pdf=False, 
-                            limitNrows=args.n)
-    else : 
-        procP.process_patch(name, DirIn, DirOut, calc_sigma_pdf=False)
+    # Run this for processing : calculation of over 27 metrics per lightcurve per band 
+    for name in filter_patch_files :
+         procP.process_patch(name, DirIn, DirOut, pre=args.pre, calc_sigma_pdf=False, 
+                                limitNrows=args.n)
+
+else:
+    print('There are no files to process')
+
+
+ 
 
 
 
