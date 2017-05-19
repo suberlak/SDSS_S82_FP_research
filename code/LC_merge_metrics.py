@@ -423,120 +423,123 @@ mask_missing_input = np.in1d(needed_files, available_files)
 if np.sum(~mask_missing_input) > 0 : 
     print('%d of these are not available in the input \
         directory'%np.sum(~mask_missing_input))
-    print('--> we check these patch-files:')
     use_files= np.array(needed_files)[mask_missing_input]
+
+if len(use_files) > 4 : 
+    print('--> we check these patch-files:')
     print(use_files)
 
-# we can only merge files if there are 5 patch files per patch
-print('--> but we found that only for these patches there is \
-    data in all five bands :')
-p, count = np.unique([a[prefix_length+1:-4] for a in use_files],
-    return_counts = True)
-use_patches = p[count == 5]
-patches = np.array(patches)[np.in1d(patches, use_patches)]
-print(patches)
+    # we can only merge files if there are 5 patch files per patch
+    print('--> but we found that only for these patches there is \
+        data in all five bands :')
+    p, count = np.unique([a[prefix_length+1:-4] for a in use_files],
+        return_counts = True)
+    use_patches = p[count == 5]
+    patches = np.array(patches)[np.in1d(patches, use_patches)]
+    print(patches)
 
-#  
-# Run the first patch to start the storage DF 
-varPatchesDF=  add_patch(patch=patches[0], ebv = ebv, varPatchesDF = None, 
-                         limitNrows=args.n)
+    #  
+    # Run the first patch to start the storage DF 
+    varPatchesDF=  add_patch(patch=patches[0], ebv = ebv, varPatchesDF = None, 
+                             limitNrows=args.n)
 
-# Loop over the rest of the patches to append to that DF 
-for patch in patches[1:]:
-    varPatchesDF=  add_patch(patch=patch, ebv = ebv, 
-                       varPatchesDF = varPatchesDF, 
-                       limitNrows=args.n)
-    
-# At this point, we have the following columns : 
-# ( if narrow  = True )
-# np.ravel(varPatchesDF.columns) = array(['uN', 'uchi2DOF', 'uchi2R', 
-#       'umuFull', 'upsfMeanErr',
-#       'upsfMean_corr', 'gN', 'gchi2DOF', 'gchi2R', 'gmuFull',
-#       'gpsfMeanErr', 'gpsfMean_corr', 'rN', 'rchi2DOF', 'rchi2R',
-#       'rmuFull', 'rpsfMeanErr', 'rpsfMean_corr', 'iN', 'ichi2DOF',
-#       'ichi2R', 'imuFull', 'ipsfMeanErr', 'ipsfMean_corr', 'zN',
-#       'zchi2DOF', 'zchi2R', 'zmuFull', 'zpsfMeanErr', 'zpsfMean_corr',
-#       'ebv', 'objectId', 'patch'], dtype=object)
+    # Loop over the rest of the patches to append to that DF 
+    for patch in patches[1:]:
+        varPatchesDF=  add_patch(patch=patch, ebv = ebv, 
+                           varPatchesDF = varPatchesDF, 
+                           limitNrows=args.n)
+        
+    # At this point, we have the following columns : 
+    # ( if narrow  = True )
+    # np.ravel(varPatchesDF.columns) = array(['uN', 'uchi2DOF', 'uchi2R', 
+    #       'umuFull', 'upsfMeanErr',
+    #       'upsfMean_corr', 'gN', 'gchi2DOF', 'gchi2R', 'gmuFull',
+    #       'gpsfMeanErr', 'gpsfMean_corr', 'rN', 'rchi2DOF', 'rchi2R',
+    #       'rmuFull', 'rpsfMeanErr', 'rpsfMean_corr', 'iN', 'ichi2DOF',
+    #       'ichi2R', 'imuFull', 'ipsfMeanErr', 'ipsfMean_corr', 'zN',
+    #       'zchi2DOF', 'zchi2R', 'zmuFull', 'zpsfMeanErr', 'zpsfMean_corr',
+    #       'ebv', 'objectId', 'patch'], dtype=object)
 
-#
-# Add ra, dec , extendedness information 
-#
-fname = DirEBV+'DeepSource'+site+'_i_lt235_extendedness.csv.gz'
-deep_source_ext = pd.read_csv(fname, compression='gzip', index_col=0)
-# np.ravel(deep_source_ext.columns) = array(['deepSourceId', 'extendedness'],
-# dtype=object)
+    #
+    # Add ra, dec , extendedness information 
+    #
+    fname = DirEBV+'DeepSource'+site+'_i_lt235_extendedness.csv.gz'
+    deep_source_ext = pd.read_csv(fname, compression='gzip', index_col=0)
+    # np.ravel(deep_source_ext.columns) = array(['deepSourceId', 'extendedness'],
+    # dtype=object)
 
-fname = DirEBV+'DeepSource'+site+'_i_lt235_narrow.csv.gz' 
-deep_source_radec = pd.read_csv(fname, compression='gzip', index_col=0)
-# np.ravel(deep_source_radec.columns) = array(['parentDeepSourceId', 
-# 'deepCoaddId', 'ra', 'decl', 'psfMag',
-#      'psfMagSigma', 'tract', 'patch', 'detect_is_primary'], dtype=object)
+    fname = DirEBV+'DeepSource'+site+'_i_lt235_narrow.csv.gz' 
+    deep_source_radec = pd.read_csv(fname, compression='gzip', index_col=0)
+    # np.ravel(deep_source_radec.columns) = array(['parentDeepSourceId', 
+    # 'deepCoaddId', 'ra', 'decl', 'psfMag',
+    #      'psfMagSigma', 'tract', 'patch', 'detect_is_primary'], dtype=object)
 
-# only choose these two columns 
-radec = deep_source_radec[['ra','decl']]
-
-
-# Add extendedness, and ra,dec information :  
-ext_radec = pd.merge(deep_source_ext,radec, how='left', 
-                     left_on='deepSourceId', right_index=True)
-
-# merge this in to the varPatchesDF 
-# left merge : only add the information from 
-# ext_radec to the objects already present in 
-# varPatchesDF 
-varPatchesDF1 =  pd.merge(varPatchesDF,ext_radec, how='left', 
-                       left_on = 'objectId', right_on = 'deepSourceId') 
-
-# Select out those objects that had parents brighter than iPsfMag  
-# (uncorrected for extinction)
-# < 17 mag , because for those objects the deblender was not working 
-# properly,
-# and variability may be spurious 
-
-# Make sure we are keeping only objects without bright parents
-good_sources = np.load(DirEBV+site+'_source_without_bright_parent.npy')
-mask_keep = np.in1d(varPatchesDF1.objectId.values , good_sources)
-
-varPatchesDF_save = varPatchesDF1[mask_keep]
-varPatchesDF_discard = varPatchesDF1[~mask_keep]
+    # only choose these two columns 
+    radec = deep_source_radec[['ra','decl']]
 
 
-print('Out of total number of %d objects, with combined metrics across ugriz \
-filters and  %d patches '%
-      (len(varPatchesDF1), len(patches)))
+    # Add extendedness, and ra,dec information :  
+    ext_radec = pd.merge(deep_source_ext,radec, how='left', 
+                         left_on='deepSourceId', right_index=True)
 
-print('There are %d that have a parent i<17 mag, which are discarded' % \
-      len(varPatchesDF_discard))
+    # merge this in to the varPatchesDF 
+    # left merge : only add the information from 
+    # ext_radec to the objects already present in 
+    # varPatchesDF 
+    varPatchesDF1 =  pd.merge(varPatchesDF,ext_radec, how='left', 
+                           left_on = 'objectId', right_on = 'deepSourceId') 
 
-# http://stackoverflow.com/questions/28535067/unable-to-remove-unicode-char-
-# from-column-names-in-pandas 
-# this thing prevents a disaster before I can get a hang of 
-# how to run Python 3.5 on typhoon...
-if sys.version_info >= (3,0,0):
-    compat.PY3 = True
+    # Select out those objects that had parents brighter than iPsfMag  
+    # (uncorrected for extinction)
+    # < 17 mag , because for those objects the deblender was not working 
+    # properly,
+    # and variability may be spurious 
+
+    # Make sure we are keeping only objects without bright parents
+    good_sources = np.load(DirEBV+site+'_source_without_bright_parent.npy')
+    mask_keep = np.in1d(varPatchesDF1.objectId.values , good_sources)
+
+    varPatchesDF_save = varPatchesDF1[mask_keep]
+    varPatchesDF_discard = varPatchesDF1[~mask_keep]
+
+
+    print('Out of total number of %d objects, with combined metrics across ugriz \
+    filters and  %d patches '%
+          (len(varPatchesDF1), len(patches)))
+
+    print('There are %d that have a parent i<17 mag, which are discarded' % \
+          len(varPatchesDF_discard))
+
+    # http://stackoverflow.com/questions/28535067/unable-to-remove-unicode-char-
+    # from-column-names-in-pandas 
+    # this thing prevents a disaster before I can get a hang of 
+    # how to run Python 3.5 on typhoon...
+    if sys.version_info >= (3,0,0):
+        compat.PY3 = True
+    else : 
+        compat.PY3 = False 
+
+
+    if len(varPatchesDF_discard) > 0 : 
+        file_discard = args.var+'_ugriz_'+str(len(patches))+'_patches_'+site+\
+                       '_discarded.csv.gz'
+        print('\nWe save these objects separately, to  %s '%file_discard)
+        varPatchesDF_discard.to_csv(DirOut+file_discard , compression='gzip')
+
+    if args.nc : 
+        file_save = args.var+'_ugriz_'+str(len(patches))+'_patches_'+site+\
+                    '_narrow.csv.gz'
+        print('\nSaving only narrow version of columns ')
+        # print(np.ravel(varPatchesDF_save.columns))
+    else:
+        file_save = args.var+'_ugriz_'+str(len(patches))+'_patches_'+site+\
+                    '.csv.gz'
+
+    # This is the main product : across filters and patches merged file... 
+    varPatchesDF_save.to_csv(DirOut+file_save, compression='gzip' ) 
+
+    print('We saved the  %d objects without bright parents to %s'%\
+          (len(varPatchesDF_save), DirOut+file_save))
+
 else : 
-    compat.PY3 = False 
-
-
-if len(varPatchesDF_discard) > 0 : 
-    file_discard = args.var+'_ugriz_'+str(len(patches))+'_patches_'+site+\
-                   '_discarded.csv.gz'
-    print('\nWe save these objects separately, to  %s '%file_discard)
-    varPatchesDF_discard.to_csv(DirOut+file_discard , compression='gzip')
-
-if args.nc : 
-    file_save = args.var+'_ugriz_'+str(len(patches))+'_patches_'+site+\
-                '_narrow.csv.gz'
-    print('\nSaving only narrow version of columns ')
-    # print(np.ravel(varPatchesDF_save.columns))
-else:
-    file_save = args.var+'_ugriz_'+str(len(patches))+'_patches_'+site+\
-                '.csv.gz'
-
-# This is the main product : across filters and patches merged file... 
-varPatchesDF_save.to_csv(DirOut+file_save, compression='gzip' ) 
-
-print('We saved the  %d objects without bright parents to %s'%\
-      (len(varPatchesDF_save), DirOut+file_save))
-
-
+    print('Not enough data to proceed')
