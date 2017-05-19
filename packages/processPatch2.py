@@ -224,7 +224,7 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
 
     # instead of two-steps, make just one : 
     SN = raw_data['psfFluxJy'].data / raw_data['psfFluxErrJy'].data
-    mask_SN = SN.data < 2 
+    mask_SN = SN < 2 
     raw_data['flagFaint'] = mask_SN
     print('There are %d points of %d that have S/N < 2' %(np.sum(mask_SN),\
         len(mask_SN)))
@@ -344,6 +344,9 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
     path = DirOut + 'VarD_'+name
     print('Saving varMetricsFull to  %s '%path)
     varMetricsFull_combined.to_csv(path)
+
+    print('The output dataframe header is : ')
+    print(varMetricsFull_combined.head())
     return 
 
 
