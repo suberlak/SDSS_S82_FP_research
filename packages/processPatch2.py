@@ -94,8 +94,9 @@ def flux2ab(flux, unit = 'Jy'):
         return -2.5 * np.log10(flux) - 48.6
 
 
-def process_patch(name, DirIn, DirOut, calc_sigma_pdf=False, limitNrows=None, calc_seasonal_metrics=None, 
-                  calc_seas_binned_metrics=None , verbose = None ):
+def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False, 
+                  limitNrows=None, calc_seasonal_metrics=None, 
+                  calc_seas_binned_metrics=None, verbose = None ):
     '''  A code to perform our basic processing on the raw 
     Forced Photometry data from Stripe 82, 
     performed patch-by-patch.  One clone of data lives in 
@@ -115,15 +116,16 @@ def process_patch(name, DirIn, DirOut, calc_sigma_pdf=False, limitNrows=None, ca
       in any fashion). X_columns include [''
     - calculate magnitudes on lightcurve aggregate (varMetricsFull) : 
        psfMean  psfMedian  psfMeanErr  psfMedianErr 
-    - identify variable candidates, based on lightcurve chi2dof , chi2robust, 
-       sigmaFull . The criteria are  : 
+    - identify variable candidates, based on lightcurve chi2dof , 
+       chi2robust,  sigmaFull . The criteria are  : 
        m1 = sigmaFull > 0
        m4 = chi2dof > (1 + 3.0 * np.sqrt(2 / N )
        m5 = chi2robust > (1 + 3.0 * np.sqrt(2 / N)) 
        m = m1 * (m4 | m5 )    
     - select variable candidates, and identify seasons.  
     - group the variable candidates by 'objectId', 'season'
-    - calculate variability metrics using  variabilityFunctions.computeVarMetrics()
+    - calculate variability metrics using  
+     variabilityFunctions.computeVarMetrics()
     (same as for full lightcurves),  but on seasonally-binned lightcurves .
     Return seasonal variability metrics varMetricsSeasonal
 
@@ -134,45 +136,39 @@ def process_patch(name, DirIn, DirOut, calc_sigma_pdf=False, limitNrows=None, ca
 
     Parameters :
     ---------------------
-    name : a string : name of the patch file, assumed to be of form  g00_21.csv.gz
-    DirIn: a string : directory storing the raw S82 forced photometry lightcurves, eg. 
-         '/Users/chris/GradResearch/SDSS_S82_FP_research/raw_data/rawDataFPSplit/'   
-            (for few test NCSA patches Mac)
-          or  '/astro/store/pogo4/s13_stripe82/forced_phot_lt_23/NCSA/'  
-               (for NCSA data on astro machine )
-    DirOut : a string : name of output  directory where we save aggregate information 
-          per filter-patch , eg '/Users/chris/GradResearch/SDSS_S82_FP_research/data_products/'
-           or  '/astro/store/scratch/tmp/suberlak/s13_S82_2017/NCSA/'  
-    limitNrows : integer number of rows to process from the patch file, if not the 
-          full file  . By default limitNrows=None, and we calculate metrics for all lightcurves
-          per patch file  
-    calc_seasonal_metrics : boolean, if not None,  the program will group  all light curve points 
-          by season, (usually few poins per season), and calculate statistics on these few points 
-    calc_seas_binned_metrics: boolean, if not  None , the program will bin the entire lightcurve 
-          into seasons, by averaging flux etc per season. 
-    verbose : boolean, if not  None, will print some extended diagnostic information. 
+    name : a string : name of the patch file, assumed to be of form  
+           g00_21.csv.gz
+    DirIn: a string : directory storing the raw S82 forced photometry 
+           lightcurves
+    DirOut : a string : name of output  directory where we save 
+           aggregate information 
+    limitNrows : integer number of rows to process from the patch file, 
+          if not the  full file  . By default limitNrows=None, and 
+          we calculate metrics for all lightcurves per patch file  
+    calc_seasonal_metrics : boolean, if not None,  the program will 
+          group  all light curve points  by season, (usually few points 
+          per season), and calculate statistics on these few points 
+    calc_seas_binned_metrics: boolean, if not  None , the program will 
+          bin the entire lightcurve  nto seasons, by averaging flux 
+          etc per season. 
+    verbose : boolean, if not  None, will print some extended 
+          diagnostic information. 
     
     Returns:
     ----------
-    None (there is nothing that the program explicitly returns - all output is saved as text files 
-         in a specified directory ).
+    None (there is nothing that the program explicitly returns - all 
+          output is saved as text files in a specified directory ).
     '''
 
     print('\n Processing filter_patch file %s' % name)
     
     # read in the raw lightcurve... 
-    if limitNrows is not None:
-        # note : it seems that this doesn't avoid reading the entire thing , but 
-        # astropy data_end essentially selects data_end lines from a full file... 
-        # much quicker to use pandas, and then convert to astropy.. 
-        raw_data_df = pd.read_csv(DirIn+name+'.gz', compression='gzip',  
-                     usecols=['objectId', 'mjd', 'psfFlux', 'psfFluxErr'], nrows=limitNrows )
-        raw_data = Table.from_pandas(raw_data_df)
-
-    else : 
-        raw_data = Table.read(DirIn+name+'.gz', format='csv', include_names =['objectId', 'mjd', 
-                                                                 'psfFlux', 'psfFluxErr'])
-     
+    # NOTE : if nrows = None , pd.read_csv() reads the entire file 
+    raw_data_df = pd.read_csv(DirIn+name+'.gz', compression='gzip',  
+                 usecols=['objectId', 'mjd', 'psfFlux', 'psfFluxErr'], 
+                 nrows=limitNrows )
+    raw_data = Table.from_pandas(raw_data_df)
+ 
     ##########  STEP 1 : single-epoch data ###########  
     #         1 Jy = 1.0E-26 W/m^2/Hz = 1.0E-23 erg/s/cm^2/Hz
     # 1.1  :  convert Flux from erg/cm2/sec/Hz  to Jansky
@@ -186,13 +182,16 @@ def process_patch(name, DirIn, DirOut, calc_sigma_pdf=False, limitNrows=None, ca
 
     # 1.2  : drop all rows which have NaNs in psfFlux .... 
     m1  = np.isnan(raw_data['psfFlux'].data)  # true if NaN 
-    m2 = np.bitwise_not(np.isfinite(raw_data['psfFlux'].data))  # true if not finite... 
+     # true if not finite... 
+    m2 = np.bitwise_not(np.isfinite(raw_data['psfFlux'].data))  
+
 
     # logical or : true if either condition satisfied 
     m = m1 | m2  
 
     if np.sum(m) > 0 :  # only apply if there is anything to drop ... 
-        print('In  file %s there are : \n.... %d NaN  psfFlux rows'%(fname, np.sum(m1)))
+        print('In  file %s there are : \n.... %d NaN  psfFlux \
+            rows'%(fname, np.sum(m1)))
         print('.... %d not finite  psfFlux rows'% np.sum(m2))
         print('All such rows are dropped')
         indices = np.arange(len(test))
@@ -203,20 +202,23 @@ def process_patch(name, DirIn, DirOut, calc_sigma_pdf=False, limitNrows=None, ca
     # to avoid getting error when calculating S/N  = psfFlux / psfFluxErr 
 
     m1  = np.isnan(raw_data['psfFluxErr'].data)  # true if NaN 
-    m2 =  np.bitwise_not(np.isfinite(raw_data['psfFluxErr'].data))  # true if not finite... 
+    # true if not finite... 
+    m2 =  np.bitwise_not(np.isfinite(raw_data['psfFluxErr'].data))  
     m3 = raw_data['psfFluxErr'].data == 0 
     # logical or : true if either condition satisfied 
     m = m1 | m2  | m3
 
     if np.sum(m) > 0 :  # only apply if there is anything to drop ... 
-        print('In  file %s there are : \n.... %d NaN  psfFluxErr rows'%(fname, np.sum(m1)))
+        print('In  file %s there are : \n.... %d NaN  psfFluxErr \
+            rows'%(fname, np.sum(m1)))
         print('.... %d not finite  psfFluxErr rows'% np.sum(m2))
         print('.... %d psfFluxErr = 0  rows'% np.sum(m3))
         print('All such rows are dropped')
 
     # 1.4 : select points that have S/N  < 2 , flag as Faint...
     # initialize a new column with all values set to False :
-    #flagFaint = Column(data = np.zeros(len(raw_data), dtype=bool), name = 'flagFaint')
+    #flagFaint = Column(data = np.zeros(len(raw_data), dtype=bool), 
+    # name = 'flagFaint')
     # this would also work, but doesn't allow to select good data type 
     # raw_data['flagFaint'] = True : makes a new col with int64
 
@@ -224,17 +226,20 @@ def process_patch(name, DirIn, DirOut, calc_sigma_pdf=False, limitNrows=None, ca
     SN = raw_data['psfFluxJy'].data / raw_data['psfFluxErrJy'].data
     mask_SN = SN < 2 
     raw_data['flagFaint'] = mask_SN
-    print('There are %d points of %d that have S/N < 2' %(np.sum(mask_SN),len(mask_SN)))
+    print('There are %d points of %d that have S/N < 2' %(np.sum(mask_SN),\
+        len(mask_SN)))
 
 
     # 1.5  calculate faint quantities for all rows  where S/N < 2 
 
     # make new columns ...
-    for faintColname in ['faintMean', 'faintMedian','faintTwoSigma','faintRMS']:
+    for faintColname in ['faintMean', 'faintMedian','faintTwoSigma',
+    'faintRMS']:
         raw_data[faintColname] = np.nan
         
     # temporary assignment 
-    flux, flux_err = raw_data['psfFluxJy'][mask_SN].data, raw_data['psfFluxErrJy'][mask_SN].data
+    flux, flux_err = raw_data['psfFluxJy'][mask_SN].data, \
+    raw_data['psfFluxErrJy'][mask_SN].data
     
 
     # new way of doing it with the lookup table - and very fast thanks 
