@@ -106,7 +106,8 @@ parser.add_argument("-s", "-site",help="set the data processing center from \
 # whatever was inherited from LC_processing.py
 parser.add_argument("-var", "-varfix", "-variable_prefix", help="set prefix \
                      for metrics files which are to be merged by this program\
-                     (default: %(default)s)",
+                     also used by -cd option to check for what merged metrics\
+                     already exist  (default: %(default)s)",
                      action='store', default='Var')
 
 # args limiting merger to a certain subset of the full metrics files. 
@@ -167,16 +168,8 @@ parser.add_argument("-pe", "-patch_end", help="set how many patches to merge \
 parser.add_argument("-cd", "-check_dir", help='flag : check the output \
                      directory for which patch-files have already been \
                     processed? If so, also \
-                    need to set the -pre  variable indicating the prefix of \
+                    need to set the -var variable indicating the prefix of \
                     the outfiles to be checked ', action='store_true')
-
-
-# -pre : prefix to check outDir for ... , eg  VarD_ .  This is the string before 
-#     g00_21.csv   string. 
-parser.add_argument("-pre", "-prefix", help = 'set the prefix for output \
-                    files to be checked for which patches have already been \
-                    processed (default: %(default)s)', action='store', 
-                    default='VarD_', type=str)
 
 
 
@@ -321,14 +314,14 @@ from %s'%(allOBJ, withEBV, ebv_file))
     if args.var == 'Var' : 
         for i in range(len(A)):
             label = filters[i] + 'psfMean'
-            varPatchAll[label+'_corr'] = varPatchAll[label] +  \
+            varPatchAll[label] = varPatchAll[label] +  \
                                          varPatchAll['ebv'] * A[i]
 
     elif args.var in ['VarC_', 'VarD_'] : 
         for suffix in ['_bright', '_all']:
             for i in range(len(A)):
                 label = filters[i] + 'psfMean' + suffix
-                varPatchAll[label+'_corr'] = varPatchAll[label] +  \
+                varPatchAll[label] = varPatchAll[label] +  \
                                              varPatchAll['ebv'] * A[i]
 
 
@@ -349,7 +342,7 @@ from %s'%(allOBJ, withEBV, ebv_file))
         print('Choosing only to keep the following : ')
         filters = 'ugriz'
         cols = ['N', 'chi2DOF', 'chi2R', 'muFull', 'psfMeanErr', 
-                'psfMean_corr', 'meanSN']
+                'psfMean', 'meanSN']
         print(cols)
         suffix = ['_bright', '_all']
 
