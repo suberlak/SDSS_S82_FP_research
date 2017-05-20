@@ -541,5 +541,8 @@ if len(use_files) > 4 :
     print('We saved the  %d objects without bright parents to %s'%\
           (len(varPatchesDF_save), DirOut+file_save))
 
+    print('The header of the output : ')
+    print(varPatchesDF_save.head())
+
 else : 
     print('Not enough data to proceed')
