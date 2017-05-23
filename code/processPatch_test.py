@@ -19,7 +19,7 @@ from astropy.table import Table
 from astropy.table import Column
 
 
-site=  'NCSA'
+site=  'IN2P3'
 path_to_home = '/astro/users/suberlak/' 
 DirIn = '/astro/store/pogo4/s13_stripe82/forced_phot_lt_23/'+site+'/'
 DirOut = '/astro/store/scratch/tmp/suberlak/s13_S82_2017/'+site+'/'
@@ -30,7 +30,7 @@ import variabilityFunctions as varF
 import processPatch2 as procP
 
 
-name = 'u154_175.csv'
+name = 'u155_176.csv'
 
 print('\n Processing filter_patch file %s' % name)
    
