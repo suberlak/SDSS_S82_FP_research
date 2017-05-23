@@ -105,10 +105,14 @@ parser.add_argument("-s", "-site",help="set the data processing center from \
 # default, it is 'Var',  but could also be 'VarC_', 'VarD_', etc ...,
 # whatever was inherited from LC_processing.py
 parser.add_argument("-var", "-varfix", "-variable_prefix", help="set prefix \
-                     for metrics files which are to be merged by this program\
-                     also used by -cd option to check for what merged metrics\
-                     already exist  (default: %(default)s)",
-                     action='store', default='Var')
+    for input and output files. Input consists of files with metrics \
+    (aggregate stats) for individual filter patch files.  We expect  \
+    '-var'g00_22.csv structure in the input files, eg.  VarD_g00_22.csv, \
+     if -var = 'VarD_'.  The same prefix is applied to merged metrics \
+     output files,  i.e. the basic naming of output files is \
+      '-var'+'ugriz_N_patches_', eg.  VarD_ugriz_11_patches_.. \
+        if  -var='VarD_' (default: %(default)s).",  action='store', 
+        default='VarD_')
 
 # args limiting merger to a certain subset of the full metrics files. 
 # useful for testing, or for making smaller merged metrics files 
@@ -523,18 +527,18 @@ if len(use_files) > 4 :
 
 
     if len(varPatchesDF_discard) > 0 : 
-        file_discard = args.var+'_ugriz_'+str(len(patches))+'_patches_'+site+\
+        file_discard = args.var+'ugriz_'+str(len(patches))+'_patches_'+site+\
                        '_discarded.csv.gz'
         print('\nWe save these objects separately, to  %s '%file_discard)
         varPatchesDF_discard.to_csv(DirOut+file_discard , compression='gzip')
 
     if args.nc : 
-        file_save = args.var+'_ugriz_'+str(len(patches))+'_patches_'+site+\
+        file_save = args.var+'ugriz_'+str(len(patches))+'_patches_'+site+\
                     '_narrow.csv.gz'
         print('\nSaving only narrow version of columns ')
         # print(np.ravel(varPatchesDF_save.columns))
     else:
-        file_save = args.var+'_ugriz_'+str(len(patches))+'_patches_'+site+\
+        file_save = args.var+'ugriz_'+str(len(patches))+'_patches_'+site+\
                     '.csv.gz'
 
     # This is the main product : across filters and patches merged file... 
