@@ -194,9 +194,9 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
             rows'%(name, np.sum(m1)))
         print('.... %d not finite  psfFlux rows'% np.sum(m2))
         print('All such rows are dropped')
-        indices = np.arange(len(test))
-        rows_to_remove = indices[mask]
-        raw_data.remove_rows(remove_indices)
+        indices = np.arange(len(raw_data))
+        remove_rows= indices[m]
+        raw_data.remove_rows(remove_rows)
 
     # 1.3 : check psfFluxErr : drop all rows which have NaN, or 0 ,
     # to avoid getting error when calculating S/N  = psfFlux / psfFluxErr 
@@ -204,7 +204,7 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
     m1  = np.isnan(raw_data['psfFluxErr'].data)  # true if NaN 
     # true if not finite... 
     m2 =  np.bitwise_not(np.isfinite(raw_data['psfFluxErr'].data))  
-    m3 = raw_data['psfFluxErr'].data == 0 
+    m3 =  raw_data['psfFluxErr'].data == 0 
     # logical or : true if either condition satisfied 
     m = m1 | m2  | m3
 
@@ -214,6 +214,9 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
         print('.... %d not finite  psfFluxErr rows'% np.sum(m2))
         print('.... %d psfFluxErr = 0  rows'% np.sum(m3))
         print('All such rows are dropped')
+        indices = np.arange(len(raw_data))
+        remove_rows= indices[m]
+        raw_data.remove_rows(remove_rows)
 
     # 1.4 : select points that have S/N  < 2 , flag as Faint...
     # initialize a new column with all values set to False :
@@ -251,8 +254,8 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
     # interpolate at the xObs = SN  locations .... 
     faint_SN = SN[mask_SN]
     xMean =  np.interp(faint_SN, lookup['xObs'].data, lookup['xMean'].data)
-    xMed =  np.interp(faint_SN, lookup['xObs'].data, lookup['xMedian'].data)
-    xSigma =  np.interp(faint_SN, lookup['xObs'].data, lookup['xSigma'].data)
+    xMed =  np.interp(faint_SN,lookup['xObs'].data, lookup['xMedian'].data)
+    xSigma =  np.interp(faint_SN,lookup['xObs'].data,lookup['xSigma'].data)
     xRMS = np.interp(faint_SN, lookup['xObs'].data, lookup['xRMS'].data)
 
     # add this info to the table 
@@ -267,9 +270,11 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
     # make sure we are only taking values  that are not NaN ... 
     #mask_NaNs = np.bitwise_not(np.isnan(raw_data['faintRMS'][mask_SN]))
 
-    raw_data['psfFluxJy'][mask_SN] = raw_data['faintMean'][mask_SN].data.data
-    raw_data['psfFluxErrJy'][mask_SN] = raw_data['faintRMS'][mask_SN].data.data
-
+    raw_data['psfFluxJy'][mask_SN] = \
+                                   raw_data['faintMean'][mask_SN].data.data
+    raw_data['psfFluxErrJy'][mask_SN] = \
+                                   raw_data['faintRMS'][mask_SN].data.data
+ 
     #
     ##########  STEP 2 : Derived Quantities ###########  
     #
@@ -291,20 +296,23 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
 
     # 2.2 Calculate stats for LC using only bright points 
     print('Calculating the  LC statistics using S/N > 2  points only ...')
-    mask_bright = np.bitwise_not(raw_data_df['flagFaint'].values.astype(bool))
+    mask_bright = \
+              np.bitwise_not(raw_data_df['flagFaint'].values.astype(bool))
     bright_grouped = raw_data_df[mask_bright].groupby('objectId')
     varMetricsFull_bright  = bright_grouped.apply(varF.computeVarMetrics, 
-                                                  flux_column='psfFluxJy',
-                                                  error_column = 'psfFluxErrJy',
-                                                  time_column = 'mjd', calc_sigma_pdf =calc_sigma_pdf)
+                                            flux_column='psfFluxJy',
+                                            error_column = 'psfFluxErrJy',
+                                            time_column = 'mjd', 
+                                            calc_sigma_pdf =calc_sigma_pdf)
 
     # 2.3 Calculate stats for LC using all points 
     print('Calculating the  LC statistics using all S/N  points  ...')
     all_grouped = raw_data_df.groupby('objectId')
     varMetricsFull_all  = all_grouped.apply(varF.computeVarMetrics, 
-                                                  flux_column='psfFluxJy',
-                                                  error_column = 'psfFluxErrJy',
-                                                  time_column = 'mjd',calc_sigma_pdf =calc_sigma_pdf) 
+                                            flux_column='psfFluxJy',
+                                            error_column = 'psfFluxErrJy',
+                                            time_column = 'mjd',
+                                            calc_sigma_pdf =calc_sigma_pdf) 
 
 
     # 2.4  calculate magnitudes from fluxes ... 
@@ -312,34 +320,43 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
 
     # Calculate magnitudes based on average fluxes :
     # psfMean  psfMedian  psfMeanErr  psfMedianErr 
-    varMetricsFull_all['psfMean'] = flux2ab(varMetricsFull_all['psfFluxMean'], unit='Jy')
-    varMetricsFull_all['psfMedian'] = flux2ab(varMetricsFull_all['psfFluxMedian'], unit='Jy')
-    varMetricsFull_all['psfMeanErr'] = flux2absigma(varMetricsFull_all['psfFluxMean'],
-                                                    varMetricsFull_all['psfFluxMeanErr'])
-    varMetricsFull_all['psfMedianErr'] = flux2absigma(varMetricsFull_all['psfFluxMedian'],
-                                                      varMetricsFull_all['psfFluxMedianErr'])
+    varMetricsFull_all['psfMean'] = \
+            flux2ab(varMetricsFull_all['psfFluxMean'], unit='Jy')
+    varMetricsFull_all['psfMedian'] = \
+            flux2ab(varMetricsFull_all['psfFluxMedian'], unit='Jy')
+    varMetricsFull_all['psfMeanErr'] = \
+            flux2absigma(varMetricsFull_all['psfFluxMean'],
+                         varMetricsFull_all['psfFluxMeanErr'])
+    varMetricsFull_all['psfMedianErr'] = \
+            flux2absigma(varMetricsFull_all['psfFluxMedian'],
+                         varMetricsFull_all['psfFluxMedianErr'])
 
 
-    varMetricsFull_bright['psfMean'] = flux2ab(varMetricsFull_bright['psfFluxMean'], unit='Jy')
-    varMetricsFull_bright['psfMedian'] = flux2ab(varMetricsFull_bright['psfFluxMedian'], unit='Jy')
-    varMetricsFull_bright['psfMeanErr'] = flux2absigma(varMetricsFull_bright['psfFluxMean'],
-                                                    varMetricsFull_bright['psfFluxMeanErr'])
-    varMetricsFull_bright['psfMedianErr'] = flux2absigma(varMetricsFull_bright['psfFluxMedian'],
-                                                      varMetricsFull_bright['psfFluxMedianErr'])
+    varMetricsFull_bright['psfMean'] = \
+           flux2ab(varMetricsFull_bright['psfFluxMean'], unit='Jy')
+    varMetricsFull_bright['psfMedian'] = \
+           flux2ab(varMetricsFull_bright['psfFluxMedian'], unit='Jy')
+    varMetricsFull_bright['psfMeanErr'] = \
+           flux2absigma(varMetricsFull_bright['psfFluxMean'],
+                        varMetricsFull_bright['psfFluxMeanErr'])
+    varMetricsFull_bright['psfMedianErr'] = \
+           flux2absigma(varMetricsFull_bright['psfFluxMedian'],
+                        varMetricsFull_bright['psfFluxMedianErr'])
 
     print('Calculating magnitudes from fluxes is finished')
 
 
-    # 2.5  change colnames to reflect which subset of points per lightcurve was used 
-    # the easiest way to do it is to add_suffix in pandas 
+    # 2.5  change colnames to reflect which subset of points per lightcurve
+    # was used the easiest way to do it is to add_suffix in pandas 
 
     varMetricsFull_all = varMetricsFull_all.add_suffix('_all')
     varMetricsFull_bright = varMetricsFull_bright.add_suffix('_bright')
 
     # 2.6 combine the two ... 
-    varMetricsFull_combined = pd.concat([varMetricsFull_all,varMetricsFull_bright], axis=1)
+    varMetricsFull_combined = pd.concat([varMetricsFull_all,
+                                         varMetricsFull_bright], axis=1)
 
-    ######################### SAVING OUTPUT        ######################### 
+    ######################### SAVING OUTPUT        ######################## 
     # 
     path = DirOut + 'VarD_'+name
     print('Saving varMetricsFull to  %s '%path)
