@@ -181,9 +181,9 @@ elif args.s in ['2', 'IN2P3']:
 if args.e in  ['m', 'mac'] : 
     path_to_home = '/Users/chris/GradResearch/'
     DirIn = '/Users/chris/GradResearch/SDSS_S82_FP_research/raw_data/\
-    rawDataFPSplit/'
+rawDataFPSplit/'
     DirOut = '/Users/chris/GradResearch/SDSS_S82_FP_research/\
-    data_products/varMetrics/'
+data_products/varMetrics/'
 
 elif args.e in ['t','typhoon'] :
     path_to_home = '/astro/users/suberlak/' 
