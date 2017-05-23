@@ -191,7 +191,7 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
 
     if np.sum(m) > 0 :  # only apply if there is anything to drop ... 
         print('In  file %s there are : \n.... %d NaN  psfFlux \
-            rows'%(fname, np.sum(m1)))
+            rows'%(name, np.sum(m1)))
         print('.... %d not finite  psfFlux rows'% np.sum(m2))
         print('All such rows are dropped')
         indices = np.arange(len(test))
@@ -210,7 +210,7 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
 
     if np.sum(m) > 0 :  # only apply if there is anything to drop ... 
         print('In  file %s there are : \n.... %d NaN  psfFluxErr \
-            rows'%(fname, np.sum(m1)))
+            rows'%(name, np.sum(m1)))
         print('.... %d not finite  psfFluxErr rows'% np.sum(m2))
         print('.... %d psfFluxErr = 0  rows'% np.sum(m3))
         print('All such rows are dropped')
