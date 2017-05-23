@@ -437,14 +437,17 @@ if len(use_files) > 4 :
     print('--> we check these patch-files:')
     print(use_files)
 
-    # we can only merge files if there are 5 patch files per patch
-    print('--> but we found that only for these patches there is \
-        data in all five bands :')
-    p, count = np.unique([a[prefix_length+1:-4] for a in use_files],
-        return_counts = True)
-    use_patches = p[count == 5]
-    patches = np.array(patches)[np.in1d(patches, use_patches)]
-    print(patches)
+    if len(use_files) < len(needed_files) : 
+        # we can only merge files if there are 5 patch files per patch
+        print('--> but we found that only for these patches there is \
+            data in all five bands :')
+        p, count = np.unique([a[prefix_length+1:-4] for a in use_files],
+            return_counts = True)
+        use_patches = p[count == 5]
+        patches = np.array(patches)[np.in1d(patches, use_patches)]
+        print(patches)
+    else:
+        print('We have data for all requested patches')
 
     #  
     # Run the first patch to start the storage DF 
