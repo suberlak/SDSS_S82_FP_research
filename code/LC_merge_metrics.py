@@ -163,15 +163,6 @@ parser.add_argument("-pe", "-patch_end", help="set how many patches to merge \
                     choices = range(0,11))
 
 
-# -cd : check outDir  if yes  (default no),  it would run the check of files 
-#    that startwith  -pre
-parser.add_argument("-cd", "-check_dir", help='flag : check the output \
-                     directory for which patch-files have already been \
-                    processed? If so, also \
-                    need to set the -var variable indicating the prefix of \
-                    the outfiles to be checked ', action='store_true')
-
-
 
 # parse all arguments : do it only once in an entire program ... 
 args = parser.parse_args()
@@ -447,7 +438,7 @@ if len(use_files) > 4 :
         patches = np.array(patches)[np.in1d(patches, use_patches)]
         print(patches)
     else:
-        print('We have data for all requested patches')
+        print('--> we have data for all requested patches')
 
     #  
     # Run the first patch to start the storage DF 
