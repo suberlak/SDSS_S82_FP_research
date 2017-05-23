@@ -408,7 +408,7 @@ needed_files = []
 for patch, filter in product(patches, 'ugriz') :
     needed_files.append(args.pre +filter+patch+'.csv')
 print('--> This means that we need %d metrics files \
- (5 per patch) '%len(needed_files))
+    (5 per patch) '%len(needed_files))
 
 
 # list the input dir.. 
