@@ -420,11 +420,19 @@ print('--> This means that we need %d metrics files \
 available_files = os.listdir(DirIn)
 prefix_length = len(args.var)
 mask_missing_input = np.in1d(needed_files, available_files)
+
+# if not all input is available 
 if np.sum(~mask_missing_input) > 0 : 
     print('%d of these are not available in the input \
         directory'%np.sum(~mask_missing_input))
     use_files= np.array(needed_files)[mask_missing_input]
 
+# in case that all  required input is available
+else:
+    use_files = needed_files
+
+# Only proceed if there are at least 4 patch files to merge : 
+# need to merge  ugriz... 
 if len(use_files) > 4 : 
     print('--> we check these patch-files:')
     print(use_files)
