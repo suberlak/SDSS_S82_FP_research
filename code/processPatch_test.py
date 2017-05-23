@@ -59,17 +59,17 @@ m1  = np.isnan(raw_data['psfFlux'].data)  # true if NaN
 m2 = np.bitwise_not(np.isfinite(raw_data['psfFlux'].data))  
 
 
-# logical or : true if either condition satisfied 
+ # logical or : true if either condition satisfied 
 m = m1 | m2  
 
 if np.sum(m) > 0 :  # only apply if there is anything to drop ... 
     print('In  file %s there are : \n.... %d NaN  psfFlux \
-        rows'%(fname, np.sum(m1)))
+        rows'%(name, np.sum(m1)))
     print('.... %d not finite  psfFlux rows'% np.sum(m2))
     print('All such rows are dropped')
-    indices = np.arange(len(test))
-    rows_to_remove = indices[mask]
-    raw_data.remove_rows(remove_indices)
+    indices = np.arange(len(raw_data))
+    remove_rows= indices[m]
+    raw_data.remove_rows(remove_rows)
 
 # 1.3 : check psfFluxErr : drop all rows which have NaN, or 0 ,
 # to avoid getting error when calculating S/N  = psfFlux / psfFluxErr 
@@ -83,10 +83,14 @@ m = m1 | m2  | m3
 
 if np.sum(m) > 0 :  # only apply if there is anything to drop ... 
     print('In  file %s there are : \n.... %d NaN  psfFluxErr \
-        rows'%(fname, np.sum(m1)))
+        rows'%(name, np.sum(m1)))
     print('.... %d not finite  psfFluxErr rows'% np.sum(m2))
     print('.... %d psfFluxErr = 0  rows'% np.sum(m3))
     print('All such rows are dropped')
+    indices = np.arange(len(raw_data))
+    remove_rows= indices[m]
+    raw_data.remove_rows(remove_rows)
+
 
 # 1.4 : select points that have S/N  < 2 , flag as Faint...
 # initialize a new column with all values set to False :
