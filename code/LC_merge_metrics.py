@@ -104,7 +104,7 @@ parser.add_argument("-s", "-site",help="set the data processing center from \
 # -var : prefix for metrics files of variable objects in the DirIn... by 
 # default, it is 'Var',  but could also be 'VarC_', 'VarD_', etc ...,
 # whatever was inherited from LC_processing.py
-parser.add_argument("-var", "-varfix", "-variable_prefix", help="set prefix \
+parser.add_argument("-pre", "-prefix", help="set prefix \
     for input and output files. Input consists of files with metrics \
     (aggregate stats) for individual filter patch files.  We expect  \
     '-var'g00_22.csv structure in the input files, eg.  VarD_g00_22.csv, \
@@ -262,7 +262,7 @@ def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, DirIn=DirIn,
     varPatch = {}
     # if nrows = None , pd.read_csv() reads the entire file 
     for filter in 'ugriz':
-        File = args.var +filter+patch+'.csv'
+        File = args.pre +filter+patch+'.csv'
         varPatch[filter] = pd.read_csv(DirIn+File, nrows=limitNrows, 
                                        low_memory=False)  
   
@@ -306,13 +306,13 @@ from %s'%(allOBJ, withEBV, ebv_file))
     A = [5.155, 3.793, 2.751, 2.086, 1.479]
     filters = 'ugriz'
 
-    if args.var == 'Var' : 
+    if args.pre == 'Var' : 
         for i in range(len(A)):
             label = filters[i] + 'psfMean'
             varPatchAll[label] = varPatchAll[label] +  \
                                          varPatchAll['ebv'] * A[i]
 
-    elif args.var in ['VarC_', 'VarD_'] : 
+    elif args.pre in ['VarC_', 'VarD_'] : 
         for suffix in ['_bright', '_all']:
             for i in range(len(A)):
                 label = filters[i] + 'psfMean' + suffix
@@ -341,10 +341,10 @@ from %s'%(allOBJ, withEBV, ebv_file))
         print(cols)
         suffix = ['_bright', '_all']
 
-        if args.var == 'Var' : 
+        if args.pre == 'Var' : 
             cols_save = [f+c for f in filters for c in cols]
 
-        elif args.var in ['VarC_', 'VarD_'] :
+        elif args.pre in ['VarC_', 'VarD_'] :
             cols_save = [f+c+s for f in filters for c in cols for s in suffix]
 
         cols_save.append('ebv')
@@ -406,14 +406,14 @@ print(patches)
 
 needed_files = [] 
 for patch, filter in product(patches, 'ugriz') :
-    needed_files.append(args.var +filter+patch+'.csv')
+    needed_files.append(args.pre +filter+patch+'.csv')
 print('--> This means that we need %d metrics files \
  (5 per patch) '%len(needed_files))
 
 
 # list the input dir.. 
 available_files = os.listdir(DirIn)
-prefix_length = len(args.var)
+prefix_length = len(args.pre)
 mask_missing_input = np.in1d(needed_files, available_files)
 
 # if not all input is available 
@@ -527,18 +527,18 @@ if len(use_files) > 4 :
 
 
     if len(varPatchesDF_discard) > 0 : 
-        file_discard = args.var+'ugriz_'+str(len(patches))+'_patches_'+site+\
+        file_discard = args.pre+'ugriz_'+str(len(patches))+'_patches_'+site+\
                        '_discarded.csv.gz'
         print('\nWe save these objects separately, to  %s '%file_discard)
         varPatchesDF_discard.to_csv(DirOut+file_discard , compression='gzip')
 
     if args.nc : 
-        file_save = args.var+'ugriz_'+str(len(patches))+'_patches_'+site+\
+        file_save = args.pre+'ugriz_'+str(len(patches))+'_patches_'+site+\
                     '_narrow.csv.gz'
         print('\nSaving only narrow version of columns ')
         # print(np.ravel(varPatchesDF_save.columns))
     else:
-        file_save = args.var+'ugriz_'+str(len(patches))+'_patches_'+site+\
+        file_save = args.pre+'ugriz_'+str(len(patches))+'_patches_'+site+\
                     '.csv.gz'
 
     # This is the main product : across filters and patches merged file... 
