@@ -5,6 +5,8 @@ import numpy as np
 from itertools import product
 from pandas import compat
 import os 
+import pdb
+
 #
 # A program to merge ugriz variability statistics for NCSA and IN2P3, 
 # that are a result of running LC_processing.py,  stored in 
@@ -336,7 +338,7 @@ from %s'%(allOBJ, withEBV, ebv_file))
 
         print('Choosing only to keep the following : ')
         filters = 'ugriz'
-        cols = ['N', 'chi2DOF', 'chi2R', 'muFull', 'psfMeanErr', 
+        cols = ['N', 'chi2DOF', 'chi2R', 'psfMeanErr', 
                 'psfMean', 'meanSN']
         print(cols)
         suffix = ['_bright', '_all']
@@ -495,6 +497,11 @@ if len(use_files) > 4 :
     varPatchesDF1 =  pd.merge(varPatchesDF,ext_radec, how='left', 
                            left_on = 'objectId', right_on = 'deepSourceId') 
 
+    # we used this column in merger, but since it's exactly the same 
+    # as objectId,  we drop it to remove duplicity 
+
+    varPatchesDF1.drop('deepSourceId', 1, inplace=True) 
+ 
     # Select out those objects that had parents brighter than iPsfMag  
     # (uncorrected for extinction)
     # < 17 mag , because for those objects the deblender was not working 
