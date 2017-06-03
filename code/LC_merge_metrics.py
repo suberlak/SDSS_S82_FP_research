@@ -32,23 +32,7 @@ import pdb
 # - keep only extinction-corrected mean magnitudes, N, and var params
 # - save all patches as  N_objects (rows) x 6 columns * 5 filters as a single file 
  
-#
-# Example usage : 
-# 
-# -- for testing  on mac using NCSA , using only 1000 first rows of each filter-patch file... 
-# python VarStat_merge_ugriz.py m 1  1000
-# 
-# -- for full run on typhoon with NCSA 
-# python VarStat_merge_ugriz.py t 1 
-# 
-# -- for full run on typhoon with IN2P3 
-# python VarStat_merge_ugriz.py t 2 
-#
-# -- note : by default , narrow_cols = True, 
-# which only saves a subset of columns. 
-# If need to save all columns, need to set that to narrow_cols = None 
-# If need to save all patches, keep use_N_patches = None 
-# otherwise, we will only run a subset of patches   
+
 
 
 import sys 
@@ -128,7 +112,8 @@ parser.add_argument("-n", "-nlines", help="limit the number of rows to \
 # -ncols : do we want a narrow subset of cols to be merged ? boolean, if 
 # called it is true 
 parser.add_argument("-nc", "-narrow_cols", "-narrow", help='flag: merge \
-                    only a narrow subset of columns ? ', action='store_true')
+                    only a narrow subset of columns ? (default: False)', 
+                    action='store_true')
 
 #
 # The following args set which patches should be processed  : 
@@ -223,6 +208,10 @@ ebv_file = 'ebv_'+site+'_lt235.dat'
 ebv = pd.read_table(DirEBV+ebv_file, delimiter=' ', usecols=[0,1])
 ebv.columns = ['objectId','ebv']
 
+
+# 
+# A CONVENIENCE FUNCTION TO MERGE ALL INFORMATION OVER A SINGLE PATCH  
+# 
 
 def add_patch(patch='00_21', ebv = ebv, varPatchesDF = None, DirIn=DirIn, 
     ebv_file =  ebv_file, limitNrows = None):
@@ -375,6 +364,10 @@ from %s'%(allOBJ, withEBV, ebv_file))
         
     return varPatchesDF
 
+
+#
+# MERGING INFORMATION OVER  PATCHES 
+# 
 
 if site == 'NCSA':  # NCSA patches (11)
     patches = ['00_21', '22_43', '44_65','66_87', '88_109','110_131', 
@@ -532,30 +525,74 @@ if len(use_files) > 4 :
     else : 
         compat.PY3 = False 
 
+     
 
+    # save the discarded objects 
     if len(varPatchesDF_discard) > 0 : 
         file_discard = args.pre+'ugriz_'+str(len(patches))+'_patches_'+site+\
                        '_discarded.csv.gz'
         print('\nWe save these objects separately, to  %s '%file_discard)
         varPatchesDF_discard.to_csv(DirOut+file_discard , compression='gzip')
-
+    
+    # save the combined metrics for good objects 
     if args.nc : 
-        file_save = args.pre+'ugriz_'+str(len(patches))+'_patches_'+site+\
-                    '_narrow.csv.gz'
         print('\nSaving only narrow version of columns ')
-        # print(np.ravel(varPatchesDF_save.columns))
+        if args.pre in ['VarC_', 'VarD_'] :
+            file_save_all = args.pre+'ugriz_'+str(len(patches))+'_patches_'+site+\
+                    '_narrow_all.csv.gz'
+            file_save_bright = args.pre+'ugriz_'+str(len(patches))+'_patches_'+site+\
+                        '_narrow_bright.csv.gz'   
+        else:
+            file_save = args.pre+'ugriz_'+str(len(patches))+'_patches_'+site+\
+                    '_narrow.csv.gz'
     else:
+        print('\n Saving all columns')
         file_save = args.pre+'ugriz_'+str(len(patches))+'_patches_'+site+\
                     '.csv.gz'
+    
+    if args.pre in ['VarD_', 'VarC_']:
+        
+        cols = varPatchesDF_save.columns
 
+        # select all cols that don't have 'bright' 
+        mask_not_bright = np.zeros_like(cols, dtype=bool)
+        i=0
+        for col in cols:
+            if 'bright' not in col : 
+                mask_not_bright[i] = True
+            i+=1
+            
+        # select all cols that don't have 'all' 
+        mask_not_all = np.zeros_like(cols, dtype=bool)
+        i=0
+        for col in cols:
+            if 'all' not in col : 
+                mask_not_all[i] = True
+            i+=1
+    
     # This is the main product : across filters and patches merged file... 
-    varPatchesDF_save.to_csv(DirOut+file_save, compression='gzip' ) 
+    if args.pre in ['VarD_', 'VarC_']:
+        varPatchesDF_save_bright = varPatchesDF_save[cols[mask_not_all]]
+        varPatchesDF_save_all = varPatchesDF_save[cols[mask_not_bright]]
 
-    print('We saved the  %d objects without bright parents to %s'%\
-          (len(varPatchesDF_save), DirOut+file_save))
+        varPatchesDF_save_bright.to_csv(DirOut+file_save_bright, compression='gzip' )
+        varPatchesDF_save_all.to_csv(DirOut+file_save_all, compression='gzip' )
+        print('We saved  n=%d objects without bright parents, only _bright suffix, to %s'%\
+              (len(varPatchesDF_save_bright), DirOut+file_save_bright))
+        print('The header of the output : ')
+        print(varPatchesDF_save_bright.head())
 
-    print('The header of the output : ')
-    print(varPatchesDF_save.head())
+        print('We saved  n=%d objects without bright parents, only _all suffix, to %s'%\
+              (len(varPatchesDF_save_all), DirOut+file_save_all))
+        print('The header of the output : ')
+        print(varPatchesDF_save_all.head())
+
+    else : 
+        varPatchesDF_save.to_csv(DirOut+file_save, compression='gzip' ) 
+        print('We saved  n=%d objects without bright parents to %s'%\
+              (len(varPatchesDF_save), DirOut+file_save))
+        print('The header of the output : ')
+        print(varPatchesDF_save.head())
 
 else : 
     print('Not enough data to proceed')
