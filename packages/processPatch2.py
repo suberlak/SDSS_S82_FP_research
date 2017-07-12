@@ -94,45 +94,37 @@ def flux2ab(flux, unit = 'Jy'):
         return -2.5 * np.log10(flux) - 48.6
 
 
-def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False, 
-                  limitNrows=None, calc_seasonal_metrics=None, 
-                  calc_seas_binned_metrics=None, verbose = None ):
-    '''  A code to perform our basic processing on the raw 
-    Forced Photometry data from Stripe 82, 
-    performed patch-by-patch.  One clone of data lives in 
-    https://lsst-web.ncsa.illinois.edu/~yusra/S13Agg/rawDataFPSplit/
-    and another in 
-    /astro/store/pogo4/....
-    
-    - drop all  rows that have either psfFlux or psfFluxErr as NaN or inf 
-    - make a column 'flagFaint' ==1 if  S/N < 2 for a given point 
-    - one these 'faint' points, recalculate faintMean, faintMedian, 
-      faintTwoSigma, faintRMS,  using faintFunctions.py  code 
-    - replace all psfFlux  where S/N < 2  with  faintMean 
-    - group by 'objectId', and calculate variability metrics using 
-      variabilityFunctions.computeVarMetrics().  I call the data product:
-      ( N_objects x  X_columns  )  varMetricsFull , since these metrics
-      are computed on full lightcurves (not seasonally binned or averaged 
-      in any fashion). X_columns include [''
-    - calculate magnitudes on lightcurve aggregate (varMetricsFull) : 
-       psfMean  psfMedian  psfMeanErr  psfMedianErr 
-    - identify variable candidates, based on lightcurve chi2dof , 
-       chi2robust,  sigmaFull . The criteria are  : 
-       m1 = sigmaFull > 0
-       m4 = chi2dof > (1 + 3.0 * np.sqrt(2 / N )
-       m5 = chi2robust > (1 + 3.0 * np.sqrt(2 / N)) 
-       m = m1 * (m4 | m5 )    
-    - select variable candidates, and identify seasons.  
-    - group the variable candidates by 'objectId', 'season'
-    - calculate variability metrics using  
-     variabilityFunctions.computeVarMetrics()
-    (same as for full lightcurves),  but on seasonally-binned lightcurves .
-    Return seasonal variability metrics varMetricsSeasonal
+def process_patch_seasonally(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False, 
+                  limitNrows=None, verbose = None ):
+    ''' Code to  calculate aggregate metrics on seasonally - binned 
+    forced photometry light curves from Stripe 82. It is assumed 
+    that the data is stored in filter-patch files, i.e. we process 
+    only one filter at a time, with data for many objectIds, at the 
+    same time. 
 
-    varMetricsFull  and varMetricsSeasonal are saved as csv files, and so 
-    there is nothing that this function explicitly returns.  
-
-
+    Detailed step-by-step workflow : 
+    --------------------------------
+    - start with psfFlux , psfFluxErr,  and convert to Jansky
+    - aggregate by objectId, and within each aggregate,  define 
+    in which season is each epochal forced photometry measurement
+    - aggregate by objectId and season, and calculate seasonal 
+      averages  : psfFluxSMean,  psfFluxSMeanErr,  
+      psfFluxSMedian ,  psfFluxSMedianErr , using  
+      variabilityFunctions.calcWeightedMean(), 
+      variabilityFunctions.calcWeightedMeanErr(),
+      variabilityFunctions.calcMedian() , 
+      as well as chi2DOF,  chi2R, season start date, season end date,
+      Number of points per season ... 
+    - treating one of  {psfFluxSMean, psfFluxSMedian } as signal S, 
+      and {psfFluxSMeanErr,psfFluxSMedianErr } as noise N,  
+      calculate S / N ,  and if  S/N < 2  : perform faint point 
+      pipeline, and then exchange S as faintMean, and N as faintRMS
+    - now that we've ensured that each seasonal average is non-negative,
+      calculate seasonal magnitudes : 
+      psfFluxSMean --> psfSMean ,  
+      psfFluxSMeanErr --> psfSMeanErr ,  etc.  
+    - aggregating by objectId,  calculate statistics using N~4-5 points
+      (seasonal averages). 
 
     Parameters :
     ---------------------
@@ -145,12 +137,55 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
     limitNrows : integer number of rows to process from the patch file, 
           if not the  full file  . By default limitNrows=None, and 
           we calculate metrics for all lightcurves per patch file  
-    calc_seasonal_metrics : boolean, if not None,  the program will 
-          group  all light curve points  by season, (usually few points 
-          per season), and calculate statistics on these few points 
-    calc_seas_binned_metrics: boolean, if not  None , the program will 
-          bin the entire lightcurve  nto seasons, by averaging flux 
-          etc per season. 
+    verbose : boolean, if not  None, will print some extended 
+          diagnostic information. 
+    
+    Returns:
+    ----------
+    None (there is nothing that the program explicitly returns - all 
+          output is saved as text files in a specified directory ).
+
+
+    '''
+
+def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False, 
+                  limitNrows=None, calc_bright_part = False, verbose = None ):
+    '''  A code to perform our basic processing on the raw 
+    Forced Photometry data from Stripe 82, 
+    performed patch-by-patch.  One clone of data lives in 
+    https://lsst-web.ncsa.illinois.edu/~yusra/S13Agg/rawDataFPSplit/
+    and another in 
+    /astro/store/pogo4/....
+    
+    Detailed step-by-step workflow : 
+    --------------------------------
+    - drop all  rows that have either psfFlux or psfFluxErr as NaN or inf 
+    - make a column 'flagFaint' ==1 if  S/N < 2 for a given point 
+    - one these 'faint' points, recalculate faintMean, faintMedian, 
+      faintTwoSigma, faintRMS,  using faintFunctions.py  code 
+    - replace all psfFlux  where S/N < 2  with  faintMean 
+    - group by 'objectId', and calculate variability metrics using 
+      variabilityFunctions.computeVarMetrics().  I call the data product:
+      ( N_objects x  X_columns  )  varMetricsFull , since these metrics
+      are computed on full lightcurves 
+    - calculate magnitudes on lightcurve aggregate (varMetricsFull) : 
+       psfMean  psfMedian  psfMeanErr  psfMedianErr 
+
+    Parameters :
+    ---------------------
+    name : a string : name of the patch file, assumed to be of form  
+           g00_21.csv.gz
+    DirIn: a string : directory storing the raw S82 forced photometry 
+           lightcurves
+    DirOut : a string : name of output  directory where we save 
+           aggregate information 
+    limitNrows : integer number of rows to process from the patch file, 
+          if not the  full file  . By default limitNrows=None, and 
+          we calculate metrics for all lightcurves per patch file  
+    calc_bright_part : boolean, if False, we use per light curve 
+          all points, regardless of their signal-to-noise ratio. Otherwise
+          we also calculate all metrics per light curve using only 
+          bright points (with S/N > 2)
     verbose : boolean, if not  None, will print some extended 
           diagnostic information. 
     
@@ -217,6 +252,8 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
         indices = np.arange(len(raw_data))
         remove_rows= indices[m]
         raw_data.remove_rows(remove_rows)
+
+
 
     # 1.4 : select points that have S/N  < 2 , flag as Faint...
     # initialize a new column with all values set to False :
@@ -293,17 +330,18 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
     # even on mac,  on the full patch  file 
     raw_data_df = raw_data.to_pandas()
 
-
-    # 2.2 Calculate stats for LC using only bright points 
-    print('Calculating the  LC statistics using S/N > 2  points only ...')
-    mask_bright = \
-              np.bitwise_not(raw_data_df['flagFaint'].values.astype(bool))
-    bright_grouped = raw_data_df[mask_bright].groupby('objectId')
-    varMetricsFull_bright  = bright_grouped.apply(varF.computeVarMetrics, 
-                                            flux_column='psfFluxJy',
-                                            error_column = 'psfFluxErrJy',
-                                            time_column = 'mjd', 
-                                            calc_sigma_pdf =calc_sigma_pdf)
+    if calc_bright_part : 
+        # 2.2 Calculate stats for LC using only bright points 
+        print('Calculating the  LC statistics using S/N > 2  points only ...')
+        mask_bright = \
+                  np.bitwise_not(raw_data_df['flagFaint'].values.astype(bool))
+        bright_grouped = raw_data_df[mask_bright].groupby('objectId')
+        varMetricsFull_bright  = bright_grouped.apply(varF.computeVarMetrics, 
+                                                flux_column='psfFluxJy',
+                                                error_column = 'psfFluxErrJy',
+                                                time_column = 'mjd', 
+                                                calc_sigma_pdf =calc_sigma_pdf)
+        # otherwise just use all points...
 
     # 2.3 Calculate stats for LC using all points 
     print('Calculating the  LC statistics using all S/N  points  ...')
@@ -315,7 +353,7 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
                                             calc_sigma_pdf =calc_sigma_pdf) 
 
 
-    # 2.4  calculate magnitudes from fluxes ... 
+    # 2.4  calculate magnitudes from averaged fluxes ... 
    
 
     # Calculate magnitudes based on average fluxes :
@@ -331,17 +369,17 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
             flux2absigma(varMetricsFull_all['psfFluxMedian'],
                          varMetricsFull_all['psfFluxMedianErr'])
 
-
-    varMetricsFull_bright['psfMean'] = \
-           flux2ab(varMetricsFull_bright['psfFluxMean'], unit='Jy')
-    varMetricsFull_bright['psfMedian'] = \
-           flux2ab(varMetricsFull_bright['psfFluxMedian'], unit='Jy')
-    varMetricsFull_bright['psfMeanErr'] = \
-           flux2absigma(varMetricsFull_bright['psfFluxMean'],
-                        varMetricsFull_bright['psfFluxMeanErr'])
-    varMetricsFull_bright['psfMedianErr'] = \
-           flux2absigma(varMetricsFull_bright['psfFluxMedian'],
-                        varMetricsFull_bright['psfFluxMedianErr'])
+    if calc_bright_part : 
+        varMetricsFull_bright['psfMean'] = \
+               flux2ab(varMetricsFull_bright['psfFluxMean'], unit='Jy')
+        varMetricsFull_bright['psfMedian'] = \
+               flux2ab(varMetricsFull_bright['psfFluxMedian'], unit='Jy')
+        varMetricsFull_bright['psfMeanErr'] = \
+               flux2absigma(varMetricsFull_bright['psfFluxMean'],
+                            varMetricsFull_bright['psfFluxMeanErr'])
+        varMetricsFull_bright['psfMedianErr'] = \
+               flux2absigma(varMetricsFull_bright['psfFluxMedian'],
+                            varMetricsFull_bright['psfFluxMedianErr'])
 
     print('Calculating magnitudes from fluxes is finished')
 
@@ -350,11 +388,14 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
     # was used the easiest way to do it is to add_suffix in pandas 
 
     varMetricsFull_all = varMetricsFull_all.add_suffix('_all')
-    varMetricsFull_bright = varMetricsFull_bright.add_suffix('_bright')
 
-    # 2.6 combine the two ... 
-    varMetricsFull_combined = pd.concat([varMetricsFull_all,
-                                         varMetricsFull_bright], axis=1)
+    if calc_bright_part : 
+        varMetricsFull_bright = varMetricsFull_bright.add_suffix('_bright')
+        # 2.6 combine the two ... 
+        varMetricsFull_combined = pd.concat([varMetricsFull_all,
+                                             varMetricsFull_bright], axis=1)
+    else:
+        varMetricsFull_combined  = varMetricsFull_all
 
     ######################### SAVING OUTPUT        ######################## 
     # 
