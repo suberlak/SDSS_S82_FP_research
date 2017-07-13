@@ -204,7 +204,8 @@ def process_patch_seasonally(name, DirIn, DirOut, pre='VarD_',
         raw_data.remove_rows(remove_rows)
 
     # 1.3 : check psfFluxErr : drop all rows which have NaN, or 0 ,
-    # to avoid getting error when calculating S/N  = psfFlux / psfFluxErr 
+    # to avoid getting error when calculating S/N  = psfFlux / 
+    # psfFluxErr 
 
     m1  = np.isnan(raw_data['psfFluxErr'].data)  # true if NaN 
     # true if not finite... 
@@ -216,7 +217,8 @@ def process_patch_seasonally(name, DirIn, DirOut, pre='VarD_',
     if np.sum(m) > 0 :  # only apply if there is anything to drop ... 
         print('In  file %s there are : \n.... %d rows where psfFluxErr \
             is NaN'%(name, np.sum(m1)))
-        print('.... %d rows where psfFluxErr is not finite'% np.sum(m2))
+        print('.... %d rows where psfFluxErr is not finite'% 
+               np.sum(m2))
         print('.... %d rows where psfFluxErr = 0 '% np.sum(m3))
         print('All such rows are dropped')
         indices = np.arange(len(raw_data))
@@ -225,12 +227,245 @@ def process_patch_seasonally(name, DirIn, DirOut, pre='VarD_',
 
 
 
-
     
+    # 1.3 : check psfFluxErr : drop all rows which have NaN, or 0 ,
+    # to avoid getting error when calculating S/N  = psfFlux / 
+    # psfFluxErr 
+
+    m1  = np.isnan(raw_data['psfFluxErr'].data)  # true if NaN 
+    # true if not finite... 
+    m2 =  np.bitwise_not(np.isfinite(raw_data['psfFluxErr'].data))  
+    m3 =  raw_data['psfFluxErr'].data == 0 
+    # logical or : true if either condition satisfied 
+    m = m1 | m2  | m3
+
+    if np.sum(m) > 0 :  # only apply if there is anything to drop ... 
+        print('In  file %s there are : \n.... %d rows where psfFluxErr \
+            is NaN'%(name, np.sum(m1)))
+        print('.... %d rows where psfFluxErr is not finite'% 
+               np.sum(m2))
+        print('.... %d rows where psfFluxErr = 0 '% np.sum(m3))
+        print('All such rows are dropped')
+        indices = np.arange(len(raw_data))
+        remove_rows= indices[m]
+        raw_data.remove_rows(remove_rows)
 
 
-def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False, 
-                  limitNrows=None, calc_bright_part = False, verbose = None ):
+    # 2.1 :  make a new column to designate seasons...
+    raw_data['season'] = np.nan
+
+    # I make a list of boundaries between season start / end : 
+    # season_bounds
+    # first it's a list with 2005-08-01 , 2006-08-01, etc...
+    season_bounds = [str(year)+'-08-01 00:00:00.000' for year in 
+                                               np.arange(2005,2009)]
+    # Then I insert a very early date at the beginning of the list, 
+    season_bounds.insert(0,'1990-08-01 00:00:00.000' )
+    # so that all epochs between
+    # 1990 and 2005 are clustered together.
+    # Thus 1990-08-01 - 2005-08-01  is Season1
+    # 2005-2006  : Season2 ;  2006-2007 : Season3, etc.  
+    # raw photometry is averaged here WITHIN each Season. 
+
+    # Use AstroPy Time module
+    cutDates = Time(season_bounds, format='iso')
+    seasons = np.arange(len(cutDates))+0 
+        
+    # Assign value of a season for each row...
+    for i in range(len(cutDates.mjd)-1):
+        mask = (raw_data['mjd'].data > cutDates[i].mjd) * \
+               (raw_data['mjd'].data < cutDates[i+1].mjd)
+        raw_data['season'][mask]  = seasons[i]  
+    # this is better than raw_data[mask]['season'] : 
+    # somehow the order  matters 
+
+    # 2.2 Calculate seasonal  aggregates 
+    # At the moment, it is impossible to apply complicated 
+    # functions to groupby objects....
+    # Easier at this point to just convert AstroPy table 
+    # to Pandas,  and do it from here on in Pandas ...
+
+    # But it only takes a few seconds 
+    # even on mac,  on the full patch  file 
+    raw_data_df = raw_data.to_pandas()
+
+    # calculate seasonal averages 
+    grouped = raw_data_df.groupby(['objectId','season'])
+
+    # calculate averages within each season
+    # since these are aggregates within each
+    # season, call it by that name to make 
+    # all things easier... 
+
+    season_agg= grouped.apply(varF.computeVarMetrics, 
+                                     flux_column='psfFluxJy',
+                                     error_column = 'psfFluxErrJy',
+                                     time_column = 'mjd', 
+                                     calc_sigma_pdf = False, 
+                                     verbose=False,
+                                     seasonal_average = True)
+    #
+    # returns a pd.Series with the following columns :
+    #
+    # 'objectId', 'season', 'N', 'chi2DOF', 'chi2R', 'flagLtTenPts',
+    # 'maxMJD', 'meanMJD', 'meanSN', 'minMJD', 'psfFluxMean', 
+    # 'psfFluxMeanErr',  'psfFluxMedian', 'psfFluxMedianErr', 
+    # 'psfFluxSigG',  'psfFluxSkew', 'psfFluxStDev'
+
+    # 2.3 faint Pipeline for S/N  <2 
+    # Calculate S/N : first using mean, and then median, and in 
+    # each case if they
+    # are below 2,  replace by faintMean, faintMedian, faintRMS 
+
+    # read in the lookup interpolation table, 
+    # which makes it very fast thanks to the 
+    # smoothness of functions used  
+    table_address = 'flat_prior_const_counts_lookup.csv'
+    lookup = Table.read(table_address)
+
+
+    # 3: calculate faint quantities for all rows  where S/N < 2 
+    for avg in ['Mean', 'Median']:
+        
+        # temporary aliases to make it easier 
+        S = season_agg['psfFlux'+avg].values
+        N = season_agg['psfFlux'+avg+'Err'].values
+        SN = S/N
+        mask_SN = SN < 2 
+        # make a new column storing that mask : 
+        # True if SN < 2 , otherwise False 
+        season_agg['flagFaint'+avg] = mask_SN
+        print('There are %d seasons of %d that have %s-based  S/N < 2' %
+            (np.sum(mask_SN),len(mask_SN), avg))
+
+        # interpolate at the xObs = SN  locations .... 
+        faint_SN = SN[mask_SN]
+        xMean =  np.interp(faint_SN,  lookup['xObs'].data, 
+                                     lookup['xMean'].data)
+        xMed =  np.interp(faint_SN,   lookup['xObs'].data, 
+                                   lookup['xMedian'].data)
+        xSigma =  np.interp(faint_SN, lookup['xObs'].data, 
+                                    lookup['xSigma'].data)
+        xRMS = np.interp(faint_SN,    lookup['xObs'].data, 
+                                      lookup['xRMS'].data)
+        
+        # need to multiply by error to find flux 
+        faintMean = xMean * N[mask_SN]
+        faintRMS = xRMS * N[mask_SN]
+
+        # Not sure if need to save these values for anything ... 
+        # can always do it later,
+        # but for now, replace the 
+        # Signal  by faintMean , 
+        # and Noise by faintRMS 
+        season_agg['psfFlux'+avg][mask_SN] = faintMean
+        season_agg['psfFlux'+avg+'Err'][mask_SN] = faintRMS
+
+    # 3.1 Calculate seasonal magnitudes 
+    # add in quadrature 0.003 mag to 
+    # those magErrs which are < 0.003 mag
+    # and update fluxErrs for the same 
+    # measurements using the fact that 
+    # for small errors, (<0.2 mag or so), 
+    # they are the same as fractional
+    # error in flux. So, given flux and fluxErr, 
+    # we redefine error to be
+    # fluxErrNew  = sqrt[ fluxErr^2 + (0.003*flux)^2 ]
+
+    for avg in ['Mean', 'Median'] : 
+        fCol = 'psfFlux'+avg
+        fErrCol = 'psfFlux'+avg+'Err'
+        mCol = 'psf'+avg
+        mErrCol = 'psf'+avg+'Err' 
+
+        season_agg[mCol]= \
+            procP.flux2ab(season_agg[fCol], unit='Jy')    
+        season_agg[mErrCol] = \
+            procP.flux2absigma(season_agg[fCol], season_agg[fErrCol])    
+
+        # Wherever the error in magnitudes is smaller than the 
+        # minimum value, 
+        # add that minimum value
+        # How many seasons have Mean Err < min_err ? 
+        e_min = 0.003
+        mask_err = season_agg[mErrCol].values < e_min
+        print('Number of seasons with error < %.3f is %d'%
+              (e_min,np.sum(mask_err)))
+
+        # add to magnitude errors min_err for those very small ones....
+        e_old = season_agg[mErrCol].values[mask_err]
+        e_new = np.sqrt(e_min**2.0 + e_old**2.0 )
+
+        # replace the originals
+        season_agg[mErrCol].values[mask_err] = e_new
+
+        # old flux error for these few seasons where 
+        # magnitude error < 0.003  
+        f_err_old =  season_agg[fErrCol].values[mask_err]
+        f = season_agg[fCol].values[mask_err]
+
+        # new flux error 
+        f_err_new =  np.sqrt(f_err_old**2.0 + (e_min * f)**2.0)
+
+        # replace the originals
+        season_agg[fErrCol].values[mask_err] = f_err_new
+
+
+    # 3.2 need to change the multindex to columns, to be able to 
+    # aggregate again...
+    season_agg.reset_index(inplace=True)  
+
+    #### Save the seasonal averages
+    path = DirOut+ 'S_'+name
+    season_agg.to_csv(path)
+
+    # 4 Aggregate by objectId
+    grouped = season_agg.groupby('objectId')
+
+    # calculate stats using seasonal averages... 
+    # do it only using Mean... 
+    # next time around can also do that using Median, and 
+    # hstack the two ... 
+
+    # the problem here is that we have 
+    # mean-based and median-based seasonal averages,
+    # and then we calculate averages of that 
+    # so in a way we'd have mean of mean, median of mean,
+    # mean of median,  median of median,
+    # depending on what we choose to represent
+    # seasonal fluxes below as 
+    # flux_column  and error_column
+    varMetricsSeasons  = grouped.apply(varF.computeVarMetrics, 
+                                     flux_column='psfFluxMean',
+                                     error_column = 'psfFluxMeanErr',
+                                     time_column = 'meanMJD', 
+                                     calc_sigma_pdf = False, 
+                                     verbose=False,
+                                     seasonal_average = False)
+
+
+    # need to rename the columns to reflect the fact that we used 
+    # seasonal Mean-based averages,
+    # as opposed to Median-based averages 
+    # Or just use mean-based averages for now 
+
+    # calculate magnitudes for full light curve aggregates based 
+    # on seasonal averages 
+    varMetricsSeasons['psfMean'] = procP.flux2ab(
+                                    varMetricsSeasons['psfFluxMean'], 
+                                                           unit='Jy')
+    varMetricsSeasons['psfMeanErr'] = procP.flux2absigma(
+                                    varMetricsSeasons['psfFluxMean'], 
+                                 varMetricsSeasons['psfFluxMeanErr'])
+    #### Save the full LC Metrics based on averaged seasons .... 
+    path = DirOut+ 'VarS_'+name
+    varMetricsSeasons.to_csv(path)    
+
+    return
+
+def process_patch(name, DirIn, DirOut, pre='VarD_', 
+    calc_sigma_pdf=False, limitNrows=None, calc_bright_part = False, 
+    verbose = None ):
     '''  A code to perform our basic processing on the raw 
     Forced Photometry data from Stripe 82, 
     performed patch-by-patch.  One clone of data lives in 
@@ -371,10 +606,14 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
 
     # interpolate at the xObs = SN  locations .... 
     faint_SN = SN[mask_SN]
-    xMean =  np.interp(faint_SN, lookup['xObs'].data, lookup['xMean'].data)
-    xMed =  np.interp(faint_SN,lookup['xObs'].data, lookup['xMedian'].data)
-    xSigma =  np.interp(faint_SN,lookup['xObs'].data,lookup['xSigma'].data)
-    xRMS = np.interp(faint_SN, lookup['xObs'].data, lookup['xRMS'].data)
+    xMean =  np.interp(faint_SN, lookup['xObs'].data, 
+                        lookup['xMean'].data)
+    xMed =  np.interp(faint_SN,lookup['xObs'].data, 
+                        lookup['xMedian'].data)
+    xSigma =  np.interp(faint_SN,lookup['xObs'].data,
+                        lookup['xSigma'].data)
+    xRMS = np.interp(faint_SN, lookup['xObs'].data, 
+                        lookup['xRMS'].data)
 
     # add this info to the table 
     raw_data['faintMean'][mask_SN]     = xMean * flux_err
@@ -384,14 +623,16 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
 
 
 
-    # 1.6  replace psfFluxJy  by  faintMean ,  psfFluxErrJy  by  faintRMS 
+    # 1.6  replace psfFluxJy  by  faintMean ,  psfFluxErrJy  by  
+    # faintRMS 
     # make sure we are only taking values  that are not NaN ... 
-    #mask_NaNs = np.bitwise_not(np.isnan(raw_data['faintRMS'][mask_SN]))
+    #mask_NaNs = np.bitwise_not(np.isnan(raw_data['faintRMS']
+    # [mask_SN]))
 
     raw_data['psfFluxJy'][mask_SN] = \
-                                   raw_data['faintMean'][mask_SN].data.data
+                 raw_data['faintMean'][mask_SN].data.data
     raw_data['psfFluxErrJy'][mask_SN] = \
-                                   raw_data['faintRMS'][mask_SN].data.data
+                  raw_data['faintRMS'][mask_SN].data.data
  
     #
     ##########  STEP 2 : Derived Quantities ###########  
@@ -413,25 +654,27 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
 
     if calc_bright_part : 
         # 2.2 Calculate stats for LC using only bright points 
-        print('Calculating the  LC statistics using S/N > 2  points only ...')
+        print('Calculating the  LC statistics \
+            using S/N > 2  points only ...')
         mask_bright = \
-                  np.bitwise_not(raw_data_df['flagFaint'].values.astype(bool))
+         np.bitwise_not(raw_data_df['flagFaint'].values.astype(bool))
         bright_grouped = raw_data_df[mask_bright].groupby('objectId')
-        varMetricsFull_bright  = bright_grouped.apply(varF.computeVarMetrics, 
-                                                flux_column='psfFluxJy',
-                                                error_column = 'psfFluxErrJy',
-                                                time_column = 'mjd', 
-                                                calc_sigma_pdf =calc_sigma_pdf)
+        varMetricsFull_bright  = \
+            bright_grouped.apply(varF.computeVarMetrics, 
+                                    flux_column='psfFluxJy',
+                                    error_column = 'psfFluxErrJy',
+                                    time_column = 'mjd', 
+                                    calc_sigma_pdf =calc_sigma_pdf)
         # otherwise just use all points...
 
     # 2.3 Calculate stats for LC using all points 
     print('Calculating the  LC statistics using all S/N  points  ...')
     all_grouped = raw_data_df.groupby('objectId')
     varMetricsFull_all  = all_grouped.apply(varF.computeVarMetrics, 
-                                            flux_column='psfFluxJy',
-                                            error_column = 'psfFluxErrJy',
-                                            time_column = 'mjd',
-                                            calc_sigma_pdf =calc_sigma_pdf) 
+                                    flux_column='psfFluxJy',
+                                    error_column = 'psfFluxErrJy',
+                                    time_column = 'mjd',
+                                    calc_sigma_pdf =calc_sigma_pdf) 
 
 
     # 2.4  calculate magnitudes from averaged fluxes ... 
@@ -454,7 +697,8 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
         varMetricsFull_bright['psfMean'] = \
                flux2ab(varMetricsFull_bright['psfFluxMean'], unit='Jy')
         varMetricsFull_bright['psfMedian'] = \
-               flux2ab(varMetricsFull_bright['psfFluxMedian'], unit='Jy')
+               flux2ab(varMetricsFull_bright['psfFluxMedian'], 
+                           unit='Jy')
         varMetricsFull_bright['psfMeanErr'] = \
                flux2absigma(varMetricsFull_bright['psfFluxMean'],
                             varMetricsFull_bright['psfFluxMeanErr'])
@@ -465,7 +709,8 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
     print('Calculating magnitudes from fluxes is finished')
 
 
-    # 2.5  change colnames to reflect which subset of points per lightcurve
+    # 2.5  change colnames to reflect which subset of points per 
+    # lightcurve
     # was used the easiest way to do it is to add_suffix in pandas 
 
     varMetricsFull_all = varMetricsFull_all.add_suffix('_all')
@@ -480,7 +725,7 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
 
     ######################### SAVING OUTPUT        ######################## 
     # 
-    path = DirOut + 'VarD_'+name
+    path = DirOut + 'VarD_'+name  
     print('Saving varMetricsFull to  %s '%path)
     varMetricsFull_combined.to_csv(path)
 
