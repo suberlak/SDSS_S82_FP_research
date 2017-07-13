@@ -2,6 +2,12 @@
 #
 #  Chris Suberlak 04/30/2016 
 #  
+# TLDR : 
+# An elaborate wrapper for packages/processPatch2.py 
+# argument -a  sets whether to use :
+# -a 1 process_patch(),  OR 
+# -a 2 process_patch_seasonally()
+#  
 # OVERVIEW : 
 # Code to process the S82 forced  photometry lightcurves by calculating  
 # 2sigma, mean, median, based on the truncated Gaussian distribution 
@@ -94,6 +100,17 @@ parser.add_argument("-n", "-nlines", help="limit the number of rows to \
                     process in each patch-file", action="store", 
                     default=None, type=int)
 
+# Arg setting whether we should process light curve photometry
+# doing whole-light curve aggregates,  or first averaging by 
+# seasons, and then using the seasonal averages to calculate 
+# light curve-wide aggregates 
+
+parser.add_argument("-a", "-agg", help="set whether to use process_patch, \
+    or process_patch_seasonally. This is the crucial function \
+    that LC_processing is an elaborate wrapper for. ",
+    default=2, type=int)
+
+#
 #
 # The following args set which patches should be processed  : 
 #
@@ -284,8 +301,12 @@ if np.sum(mask_missing_input) > 0:
     # Run this for processing : calculation of over 27 metrics per 
     # lightcurve per band 
     for name in filter_patch_files :
-         procP.process_patch(name, DirIn, DirOut, pre=args.pre, 
-            calc_sigma_pdf=False, limitNrows=args.n)
+        if args.a is 1 :
+            procP.process_patch(name, DirIn, DirOut, pre=args.pre, 
+                calc_sigma_pdf=False, limitNrows=args.n)
+        elif args.a is 2 : 
+            procP.process_patch_seasonally(name, DirIn, DirOut, pre=args.pre, 
+                calc_sigma_pdf=False, limitNrows=args.n)
 
 else:
     print('There are no files to process')
