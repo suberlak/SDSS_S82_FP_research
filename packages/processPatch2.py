@@ -165,7 +165,7 @@ def process_patch_seasonally(name, DirIn, DirOut, pre='VarD_',
     # all bad data... )
 
 
-    print('\n Processing filter_patch file %s' % name)
+    print('\n Processing seasonally filter_patch file %s' % name)
     
     # read in the raw lightcurve... 
     # NOTE : if nrows = None , pd.read_csv() reads the entire file 
@@ -296,7 +296,7 @@ def process_patch_seasonally(name, DirIn, DirOut, pre='VarD_',
     # since these are aggregates within each
     # season, call it by that name to make 
     # all things easier... 
-
+    print('Calculating seasonal averages ...')
     season_agg= grouped.apply(varF.computeVarMetrics, 
                                      flux_column='psfFluxJy',
                                      error_column = 'psfFluxErrJy',
@@ -360,6 +360,7 @@ def process_patch_seasonally(name, DirIn, DirOut, pre='VarD_',
         # and Noise by faintRMS 
         season_agg['psfFlux'+avg][mask_SN] = faintMean
         season_agg['psfFlux'+avg+'Err'][mask_SN] = faintRMS
+    print('We corrected those using faint Pipeline\n')
 
     # 3.1 Calculate seasonal magnitudes 
     # add in quadrature 0.003 mag to 
@@ -373,15 +374,16 @@ def process_patch_seasonally(name, DirIn, DirOut, pre='VarD_',
     # fluxErrNew  = sqrt[ fluxErr^2 + (0.003*flux)^2 ]
 
     for avg in ['Mean', 'Median'] : 
+        print('For %s - based seasonal aggregates:'%avg)
         fCol = 'psfFlux'+avg
         fErrCol = 'psfFlux'+avg+'Err'
         mCol = 'psf'+avg
         mErrCol = 'psf'+avg+'Err' 
 
         season_agg[mCol]= \
-            procP.flux2ab(season_agg[fCol], unit='Jy')    
+             flux2ab(season_agg[fCol], unit='Jy')    
         season_agg[mErrCol] = \
-            procP.flux2absigma(season_agg[fCol], season_agg[fErrCol])    
+             flux2absigma(season_agg[fCol], season_agg[fErrCol])    
 
         # Wherever the error in magnitudes is smaller than the 
         # minimum value, 
@@ -418,7 +420,7 @@ def process_patch_seasonally(name, DirIn, DirOut, pre='VarD_',
     #### Save the seasonal averages
     path = DirOut+ 'S_'+name
     season_agg.to_csv(path)
-
+    print('\nSaved seasonal averages (~4 rows per objectId) to \n %s'%path)
     # 4 Aggregate by objectId
     grouped = season_agg.groupby('objectId')
 
@@ -435,6 +437,7 @@ def process_patch_seasonally(name, DirIn, DirOut, pre='VarD_',
     # depending on what we choose to represent
     # seasonal fluxes below as 
     # flux_column  and error_column
+    print('\nCalculating light curve metrics using seasonally-binned data')
     varMetricsSeasons  = grouped.apply(varF.computeVarMetrics, 
                                      flux_column='psfFluxMean',
                                      error_column = 'psfFluxMeanErr',
@@ -451,16 +454,17 @@ def process_patch_seasonally(name, DirIn, DirOut, pre='VarD_',
 
     # calculate magnitudes for full light curve aggregates based 
     # on seasonal averages 
-    varMetricsSeasons['psfMean'] = procP.flux2ab(
+    varMetricsSeasons['psfMean'] = flux2ab(
                                     varMetricsSeasons['psfFluxMean'], 
                                                            unit='Jy')
-    varMetricsSeasons['psfMeanErr'] = procP.flux2absigma(
+    varMetricsSeasons['psfMeanErr'] = flux2absigma(
                                     varMetricsSeasons['psfFluxMean'], 
                                  varMetricsSeasons['psfFluxMeanErr'])
     #### Save the full LC Metrics based on averaged seasons .... 
     path = DirOut+ 'VarS_'+name
     varMetricsSeasons.to_csv(path)    
-
+    print('\nSaved the full seasonaly-binned light curve \
+        metrics to \n %s'%path)
     return
 
 def process_patch(name, DirIn, DirOut, pre='VarD_', 
