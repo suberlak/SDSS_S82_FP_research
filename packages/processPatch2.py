@@ -40,6 +40,15 @@
 #  25 ms / lightcurve, i.e. > 3 hrs per 
 #  filter-patch. 
 #
+# My Creator, I am now willing that You should have all of me, 
+# good and bad. I pray that You now remove from me 
+# every single defect of character which stands in the way 
+# of my usefulness to You and my fellows. 
+# Grant me strength, as I go out from here, to do Your bidding.
+# Amen
+#
+#
+
 
 import pandas as pd
 import numpy as np
@@ -94,8 +103,8 @@ def flux2ab(flux, unit = 'Jy'):
         return -2.5 * np.log10(flux) - 48.6
 
 
-def process_patch_seasonally(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False, 
-                  limitNrows=None, verbose = None ):
+def process_patch_seasonally(name, DirIn, DirOut, pre='VarD_', 
+    calc_sigma_pdf=False, limitNrows=None, verbose = None ):
     ''' Code to  calculate aggregate metrics on seasonally - binned 
     forced photometry light curves from Stripe 82. It is assumed 
     that the data is stored in filter-patch files, i.e. we process 
@@ -104,7 +113,8 @@ def process_patch_seasonally(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=Fa
 
     Detailed step-by-step workflow : 
     --------------------------------
-    - start with psfFlux , psfFluxErr,  and convert to Jansky
+    - start with psfFlux , psfFluxErr,  and convert to Jansky, 
+      remove all NaN or missing rows... 
     - aggregate by objectId, and within each aggregate,  define 
     in which season is each epochal forced photometry measurement
     - aggregate by objectId and season, and calculate seasonal 
@@ -123,8 +133,10 @@ def process_patch_seasonally(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=Fa
       calculate seasonal magnitudes : 
       psfFluxSMean --> psfSMean ,  
       psfFluxSMeanErr --> psfSMeanErr ,  etc.  
+    - if for any season the psfSMeanErr < 0.003 mag, update fluxError : 
+      fluxErrNew = sqrt(fluxErr^2 + (0.003 * flux) ^2 )
     - aggregating by objectId,  calculate statistics using N~4-5 points
-      (seasonal averages). 
+      (seasonal averages)
 
     Parameters :
     ---------------------
@@ -147,6 +159,75 @@ def process_patch_seasonally(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=Fa
 
 
     '''
+
+    # Note :  1.1 to 1.3 are exactly the same as in process_patch()
+    # (reading  in the patch-file, converting to Janskys, removing 
+    # all bad data... )
+
+
+    print('\n Processing filter_patch file %s' % name)
+    
+    # read in the raw lightcurve... 
+    # NOTE : if nrows = None , pd.read_csv() reads the entire file 
+    raw_data_df = pd.read_csv(DirIn+name+'.gz', compression='gzip',  
+                 usecols=['objectId', 'mjd', 'psfFlux', 'psfFluxErr'], 
+                 nrows=limitNrows )
+    raw_data = Table.from_pandas(raw_data_df)
+ 
+    ##########  STEP 1 : single-epoch data ###########  
+    #         1 Jy = 1.0E-26 W/m^2/Hz = 1.0E-23 erg/s/cm^2/Hz
+    # 1.1  :  convert Flux from erg/cm2/sec/Hz  to Jansky
+    # make new columns with data in Jy, to follow good 
+    # programming practice (otherwise, changes are either
+    # on a view or a copy and it's not always clear)
+
+    raw_data['psfFluxJy'] = raw_data['psfFlux'] * 1E23 
+    raw_data['psfFluxErrJy'] = raw_data['psfFluxErr'] * 1E23 
+
+
+    # 1.2  : drop all rows which have NaNs in psfFlux .... 
+    m1  = np.isnan(raw_data['psfFlux'].data)  # true if NaN 
+     # true if not finite... 
+    m2 = np.bitwise_not(np.isfinite(raw_data['psfFlux'].data))  
+
+
+    # logical or : true if either condition satisfied 
+    m = m1 | m2  
+
+    if np.sum(m) > 0 :  # only apply if there is anything to drop ... 
+        print('In  file %s there are : \n.... %d rows where psfFlux \
+            is NaN'%(name, np.sum(m1)))
+        print('.... %d rows where psfFlux is not finite  '% np.sum(m2))
+        print('All such rows are dropped')
+        indices = np.arange(len(raw_data))
+        remove_rows= indices[m]
+        raw_data.remove_rows(remove_rows)
+
+    # 1.3 : check psfFluxErr : drop all rows which have NaN, or 0 ,
+    # to avoid getting error when calculating S/N  = psfFlux / psfFluxErr 
+
+    m1  = np.isnan(raw_data['psfFluxErr'].data)  # true if NaN 
+    # true if not finite... 
+    m2 =  np.bitwise_not(np.isfinite(raw_data['psfFluxErr'].data))  
+    m3 =  raw_data['psfFluxErr'].data == 0 
+    # logical or : true if either condition satisfied 
+    m = m1 | m2  | m3
+
+    if np.sum(m) > 0 :  # only apply if there is anything to drop ... 
+        print('In  file %s there are : \n.... %d rows where psfFluxErr \
+            is NaN'%(name, np.sum(m1)))
+        print('.... %d rows where psfFluxErr is not finite'% np.sum(m2))
+        print('.... %d rows where psfFluxErr = 0 '% np.sum(m3))
+        print('All such rows are dropped')
+        indices = np.arange(len(raw_data))
+        remove_rows= indices[m]
+        raw_data.remove_rows(remove_rows)
+
+
+
+
+    
+
 
 def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False, 
                   limitNrows=None, calc_bright_part = False, verbose = None ):
@@ -279,7 +360,7 @@ def process_patch(name, DirIn, DirOut, pre='VarD_', calc_sigma_pdf=False,
         
     # temporary assignment 
     flux, flux_err = raw_data['psfFluxJy'][mask_SN].data, \
-    raw_data['psfFluxErrJy'][mask_SN].data
+      raw_data['psfFluxErrJy'][mask_SN].data
     
 
     # new way of doing it with the lookup table - and very fast thanks 
