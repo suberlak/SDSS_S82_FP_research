@@ -526,6 +526,7 @@ def computeVarMetrics(group, flux_column='psfFlux' , error_column='psfFluxErr', 
       'pSigmaGaussLike' : stats['GaussLike']
 
     '''
+    
     # print diagnostic for figuring out error...
     if verbose : 
         print('objectId= %d'% group['objectId'].values[0])
@@ -540,7 +541,9 @@ def computeVarMetrics(group, flux_column='psfFlux' , error_column='psfFluxErr', 
     group = group.dropna(subset=[flux_column, error_column])
     
     # calculate range  of  dates in a given lightcurve    
-    rangeMJD = group[time_column].values.max() - group[time_column].values.min() 
+    maxMJD = group[time_column].values.max()
+    minMJD = group[time_column].values.min() 
+    rangeMJD =  maxMJD - minMJD
     
     # grab Flux and FluxErr values 
     Flux = group[flux_column].values
@@ -569,11 +572,45 @@ def computeVarMetrics(group, flux_column='psfFlux' , error_column='psfFluxErr', 
         flagLtTenPts = 1 
    
     if seasonal_average  : 
+        return pd.Series({'N':group[flux_column].count(),
+                          'psfFluxMean': FluxWMean,
+                          'psfFluxMeanErr' : FluxWMeanErr,
+                          'psfFluxMedian': calcMedian(Flux),
+                          'psfFluxMedianErr': np.sqrt(np.pi / 2)*FluxWMeanErr,
+                          'psfFluxSkew' : group[flux_column].skew(),
+                          'psfFluxSigG' : calcSigmaG(Flux),
+                          'psfFluxStDev':psfFluxStDev,
+                          'chi2DOF' : calcChi2raw(Flux,FluxErr),
+                          'chi2R' : calcChi2robust(Flux,FluxErr),
+                          'minMJD' : minMJD,
+                          'meanMJD' : group[time_column].mean(),
+                          'maxMJD' : maxMJD,
+                          'flagLtTenPts' : flagLtTenPts,
+                          'meanSN' : meanSN
+                         })
 
+    elif not calc_sigma_pdf:  
+        # not calculating the detailed intrinsic sigma : 
+        # just LC-derived basic aggregates  .... 
+        return pd.Series({'N':group[flux_column].count(),
+                          'psfFluxMean': FluxWMean,
+                          'psfFluxMeanErr' : FluxWMeanErr,
+                          'psfFluxMedian': calcMedian(Flux),
+                          'psfFluxMedianErr': np.sqrt(np.pi / 2)*FluxWMeanErr,
+                          'psfFluxSkew' : group[flux_column].skew(),
+                          'psfFluxSigG' : calcSigmaG(Flux),
+                          'psfFluxStDev':psfFluxStDev,
+                          'chi2DOF' : calcChi2raw(Flux,FluxErr),
+                          'chi2R' : calcChi2robust(Flux,FluxErr),
+                          'meanMJD' : group[time_column].mean(),
+                          'rangeMJD' : rangeMJD,
+                          'flagLtTenPts' : flagLtTenPts,
+                          'meanSN' : meanSN
+                         })
 
     # calculating the intrinsic variability 
     # following AstroML 5.8 code 
-    if calc_sigma_pdf :  
+    elif calc_sigma_pdf :  
         if N == 0 : 
             mu = np.nan
             sigma = np.nan
@@ -614,25 +651,7 @@ def computeVarMetrics(group, flux_column='psfFlux' , error_column='psfFluxErr', 
                           'pSigmaGaussLike' : stats['GaussLike'],
                           'sigmaPdfMax' : stats['sigmaPdfMax']
                          })
-    # not calculating the detailed intrinsic sigma : 
-    # just LC-derived mean, median, chi2 .... 
-    else : 
-        return pd.Series({'N':group[flux_column].count(),
-                          'psfFluxMean': FluxWMean,
-                          'psfFluxMeanErr' : FluxWMeanErr,
-                          'psfFluxMedian': calcMedian(Flux),
-                          'psfFluxMedianErr': np.sqrt(np.pi / 2)*FluxWMeanErr,
-                          'psfFluxSkew' : group[flux_column].skew(),
-                          'psfFluxSigG' : calcSigmaG(Flux),
-                          'psfFluxStDev':psfFluxStDev,
-                          'psfFluxStDevUnw' : np.std(Flux),     # temporary : unweighted stdev of Flux 
-                          'chi2DOF' : calcChi2raw(Flux,FluxErr),
-                          'chi2R' : calcChi2robust(Flux,FluxErr),
-                          'meanMJD' : group[time_column].mean(),
-                          'rangeMJD' : rangeMJD,
-                          'flagLtTenPts' : flagLtTenPts,
-                          'meanSN' : meanSN
-                         })
+    
 
 
 def ComputeVarFullBinned(group): 
