@@ -453,7 +453,7 @@ def calcSigmaG(y):
 
 
 def computeVarMetrics(group, flux_column='psfFlux' , error_column='psfFluxErr', time_column ='mjd', verbose=True,
-    calc_sigma_pdf =True):
+    calc_sigma_pdf =True, seasonal_average = False):
     ''' Variability metrics to compute for each object on full lightcurve or 
     all points in a given season.  
 
@@ -482,6 +482,20 @@ def computeVarMetrics(group, flux_column='psfFlux' , error_column='psfFluxErr', 
                   'sigmaPdfMax' : sigma at the maximum  of the 1D p(sigma) (otherwise
                       it is found as the 2D maximum of the log-likelihood 
                       in mu, sigma space 
+
+    Parameters: 
+    --------------------
+    group : a pandas grouped object 
+    flux_column : the name of column containing flux measurement, by default:  'psfFlux' 
+    error_column : the name of column with flux error value,  default : 'psfFluxErr'
+    time_column : the name of time column,  default : 'mjd'
+    verbose : a boolean flag whether to print names of objectId's in each group, default: True,
+    calc_sigma_pdf : a boolean flag whether to calculate the detailed intrinsic sigma according to 
+      AstroML Fig. 5.8 prescription, default: True 
+    seasonal_average : a boolean flag whether the input grouped object is grouped by just 
+      objectId,  or both objectId and season.   In the latter case, set the flag to 'True', 
+      so that we don't calculate detailed sigma,  and we calculate minMJD, maxMJD, which correspond
+      to season start mjd, season end mjd. By default : False. 
 
     Returns : 
     ---------------------------------------------------------------
@@ -554,6 +568,9 @@ def computeVarMetrics(group, flux_column='psfFlux' , error_column='psfFluxErr', 
     else:
         flagLtTenPts = 1 
    
+    if seasonal_average  : 
+
+
     # calculating the intrinsic variability 
     # following AstroML 5.8 code 
     if calc_sigma_pdf :  
