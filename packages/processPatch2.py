@@ -439,7 +439,7 @@ def process_patch_seasonally(name, DirIn, DirOut, pre='VarD_',
                                      flux_column='psfFluxMean',
                                      error_column = 'psfFluxMeanErr',
                                      time_column = 'meanMJD', 
-                                     calc_sigma_pdf = False, 
+                                     calc_sigma_pdf = calc_sigma_pdf, 
                                      verbose=False,
                                      seasonal_average = False)
 
