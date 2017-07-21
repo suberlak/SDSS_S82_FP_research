@@ -127,7 +127,7 @@ parser.add_argument("-a", "-agg", help="set whether to use process_patch, \
 
 # -single_patch : if we want to process only a single patch and then stop 
 parser.add_argument("-sp", "-single_patch",help="set the patch which we \
-    should process",  action ='store', default=None, type=str)
+    should process, eg. g00_22.csv",  action ='store', default=None, type=str)
 
 
 

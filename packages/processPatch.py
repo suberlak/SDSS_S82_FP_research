@@ -1,4 +1,11 @@
 # -*- coding: iso-8859-1 -*-
+#
+#
+#
+#  This is OLD and NOT supported code 
+#
+# 
+
 import pandas as pd
 import numpy as np
 import os 
