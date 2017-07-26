@@ -1,0 +1,206 @@
+% mnras_template.tex
+%
+% LaTeX template for creating an MNRAS paper
+%
+% v3.0 released 14 May 2015
+% (version numbers match those of mnras.cls)
+%
+% Copyright (C) Royal Astronomical Society 2015
+% Authors:
+% Keith T. Smith (Royal Astronomical Society)
+
+% Change log
+%
+% v3.0 May 2015
+%    Renamed to match the new package name
+%    Version number matches mnras.cls
+%    A few minor tweaks to wording
+% v1.0 September 2013
+%    Beta testing only - never publicly released
+%    First version: a simple (ish) template for creating an MNRAS paper
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Basic setup. Most papers should leave these options alone.
+\documentclass[fleqn,usenatbib]{mnras}  % a4paper,
+
+% MNRAS is set in Times font. If you don't have this installed (most LaTeX
+% installations will be fine) or prefer the old Computer Modern fonts, comment
+% out the following line
+%\usepackage{newtxtext,newtxmath}
+%\usepackage{lmodern}
+% Depending on your LaTeX fonts installation, you might get better results with one of these:
+\usepackage{mathptmx}
+%\usepackage{txfonts}
+
+
+% Use vector fonts, so it zooms properly in on-screen viewing software
+% Don't change these lines unless you know what you are doing
+\usepackage[T1]{fontenc}
+\usepackage{ae,aecompl}
+\usepackage{diagbox}
+
+%%%%% AUTHORS - PLACE YOUR OWN PACKAGES HERE %%%%%
+
+% Only include extra packages if you really need them. Common packages are:
+\usepackage{graphicx}	% Including figure files
+\usepackage{amsmath}	% Advanced maths commands
+\usepackage{amssymb}	% Extra maths symbols
+\usepackage{savesym}  % prevent symbol conflicts
+\savesymbol{sf}
+%\generate{%
+%  \file{breqn.sty}{\nopreamble\from{breqn.dtx}{breqn.sty}}%
+%}
+%\usepackage{breqn} % automatic breaking equation 
+%\usepackage{fancyvrb}
+%\VerbatimFootnotes
+\usepackage{cprotect}  % to allow verb in caption 
+\DeclareMathOperator\erfc{erfc}
+\DeclareMathOperator\erf{erf}
+\DeclareMathOperator\cdf{cdf}
+\DeclareMathOperator\sf{sf}
+\DeclareMathOperator\isf{isf}
+\DeclareMathOperator\ppf{ppf}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%% AUTHORS - PLACE YOUR OWN COMMANDS HERE %%%%%
+
+% Please keep new commands to a minimum, and use \newcommand not \def to avoid
+% overwriting existing commands. Example:
+%\newcommand{\pcm}{\,cm$^{-2}$}	% per cm-squared
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%% TITLE PAGE %%%%%%%%%%%%%%%%%%%
+
+% Title of the paper, and the short title which is used in the headers.
+% Keep the title short and informative.
+\title[SDSS Quasars]{SDSS Stripe 82 : finding quasars in the forced photmetry haystack}
+
+% The list of authors, and the short list which is used in the headers.
+% If you need two or more lines of authors, add an extra line using \newauthor
+\author[K. Suberlak et al.]{
+Krzysztof Suberlak,$^{1}$\thanks{E-mail: suberlak@uw.edu}
+\v{Z}eljko Ivezi\'c, $^{1}$
+Yusra AlSayyad$^{1}$ 
+\\
+% List of institutions
+$^{1}$Department of Astronomy, University of Washington, Seattle, WA, United States\\
+}
+
+% These dates will be filled out by the publisher
+\date{Accepted XXX. Received YYY; in original form ZZZ}
+
+% Enter the current year, for the copyright statements etc.
+\pubyear{2017}
+
+% Don't change these lines
+\begin{document}
+\label{firstpage}
+\pagerange{\pageref{firstpage}--\pageref{lastpage}}
+\maketitle
+
+% Abstract of the paper
+\begin{abstract}
+We provide variability and color-selected quasar sample up to g < 23.5 . We reproduce many results from previous research, and find that using the LSST Stack reprocesse SDSS S82 data allows reaching fainter objects, and extending the reach of possible quasar candidate classification. 
+
+\end{abstract}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%% BODY OF PAPER %%%%%%%%%%%%%%%%%%
+
+\section{Introduction}
+\label{sec:intro}
+
+This report aims to outline the process of analyzing the forced photometry reprocessed SDSS Stripe 82 data with the aim of improving the quasar selection using combined color and variability cuts. 
+
+Quasars are some of the brightest sources of radiation in the Universe. Most galaxies have gone through a phase of rapid accretion onto the central supermassive black hole, which resulted in emission of radiation from the hot accretion disk. As a result of physical processes in the disk, the radiation exhibits stochastic variability that can be mathematically described by a damped random walk,  or a process with a certain covariance, and characteristic decay timescale. The amplitude of variability and characteristic timescale can be linked to physical properties of the disk, and are therefore of high interest.  Beyond that, quasars are relevant as astrophysical probes,  since the quasar luminosity function is related to the evolution of galactic initial mass function.  (McGreer+2013)
+
+Traditionally quasars can be found by color cuts because at least the nearby ones occupy a specific region in the color space (Sesar+2007, Ivezic+2003, Bovy+2011). However, it has long been recognized (Fan+1999) that as the redshift of the quasar increases, it's color changes because we probe different regions of the intrinsic spectral energy distribution. Around redshift 2 quasars cross through the stellar locus in u-g vs g-r color space (Yang+2016, Richards+2015 , Jiang+2014), so that without an additional selection criterion they are indistinguishable from stars (especially M dwarfs at redsfhits 5-6, Yang+2016). At higher redshifts quasars again occupy a region that can be confused with RR Lyrae in the color space. Variability has been successfully employed for quasar selection for a number of years (Palanque-Delabrouille 2011, 2013, 2016, Schmidt+2010, VandenBerk+2004, MacLeod+2011, MacLeod+2013, Peters+2015).  This possible because stars in the main stellar locus are not variable, and RR Lyrae or Cepheids have a very specific variability pattern, very distinct from DRW. Eclipsing Binaries exhibit only very occasional deep dips in magnitude, which would be well distinguished from quasars also based on variability alone.   Combining variability and color information can therefore provide a way to select quasars with minimally small contamination. 
+
+Stripe 82 is a very special SDSS field, observed multiple times, initially as part of the supernova survey.  Each object in this equatorial stripe has between 60-180 epochs, and this allows study of variability. Coupled with supreme, well-calibrated SDSS photometry,  S82 is a favorable testbed for selection and classification studies. 
+
+The S82 data was reprocessed in the Summer of 2013 as a result of the LSST Data Challenge, that was designed to test the capability of then in-development LSST Stack\footnote{see \url{https://confluence.lsstcorp.org/display/DM/Properties+of+the+2013+SDSS+Stripe+82+reprocessing}}. The S82 forced photometry dataset was also used as the testbed of database ingest into the Prototype Data Access Center\footnote{DMTN-029  : Loading SDSS Stripe 82 data into PDAC \url{https://dmtn-029.lsst.io}}.   
+
+The reprocessing included preparing i-band coadds, source detection on the coadds, and forced photometry on these locations in all epochal u,g,r,i,z data. The reprocessing effort was shared between the NCSA and IN2P3 to test the portability of algorithms. A five degree overlap was processed in both Data Processing Centers (DPC). 
+
+
+\section{S82 reprocessing}
+\label{sec:data}
+
+We use data from all SDSS runs up to an including run 7202 (Data Release 7), including all 6 SDSS camera columns. Stripe 82 survey covered an equatorial strip of the sky, defined by declination limits of $\pm1.27\deg$, extending from R.A. $\approx$ $20^{h} (320 \deg)$ to R.A.  $\approx$ $4^{h} (55 \deg)$ \citep{sesar2007,sesar2010}. Observations conducted prior to September 2005 (part of SDSS I-II) had a more sparse sampling than SDSS-III, and the SDSS Supernova Survey, which ran between September 1st - November 30th each year between 2005-2007. 
+
+The SDSS Stripe 82 DR7  data  was processed in two data centers : NCSA (National Center for Supercomputing Applications, University of Illinois at Urbana-Champaign, IL) and IN2P3  (Institut national de physique nucl\'eaire et de physique des particules in Paris, France). NCSA processed data from $-40 \deg \, (+320 \deg) < RA < +10 \deg $ and IN2P3 with $ +5 \deg < RA < +55 \deg$ . There is a $5 \deg$ overlap, used to confirm that the data processing pipeline in both data centers yields identical data products. The entire strip was split into smaller patches\footnote{patch boundaries can be found \url{https://lsst-web.ncsa.illinois.edu/lsstdata/dr-w2013/coaddBounds.txt} }
+
+All epochs (individual images) were background-subtracted, and then scaled from the Digital Unit counts to fluxes by comparing standard objects against the \citep{ivezic2007} catalog  (similar to  Jiang+2014). We downloaded the data from the NCSA storage at \url{https://lsst-web.ncsa.illinois.edu/~yusra/S13Agg/rawDataFPSplit/}.   
+
+The available data includes the DeepSource tables, which constitute of i-band coadd detection information,  and the DeepForcedPhot  tables, which contain forced photometry seeded from i-band detections. 
+
+The DeepSource tables  and DeepForcedPhot tables can be joined on deepSourceId, which is called objectId in DeepForcedPhot. 
+
+Yusra AlSayyad and Ian McGreer calculated summary aggregate metrics on the S82 S13 data, using the code available at \url{https://github.com/imcgreer/QLFz4}. This information was used in McGreer+2013, and AlSayyad 2016 PhD Thesis.  
+
+Source extraction often needs to address the problem of blended sources.  In such case the process of deblending assigns a single ParentSourceId to a blended clump. Sources with parents brighter than  17 mag in the coadded i-band are considered unreliable, since they were not handled well by the deblender . ParentSourceId is null for objects that are their own parents (or in other words, are not blended). 
+
+Imposing a cut of 23.5 mag in coadded i-band , the main DeepSource NCSA -processed catalogs used contain 5474350 primary sources , and 1957486 non-primary sources (deblender parents and secondary detections). IN2P3-processed portion of the S82 includes 4998901 primary sources, and 1882303 non-primary sources.   
+
+Both NCSA and IN2P3-processed  regions of S82 were divided into smaller sections called patches. There are 11 patches per each DPC : 
+%\verb|'00_21', '22_43','44_65', '66_87' ,'88_109','110_131',
+%    '132_153', '154_175',  '176_181', '365_387', '388_409'| in NCSA,  and \verb|'155_176', '176_197','197_218', '218_239', '239_260',
+%    '260_281', '281_302', '302_323','323_344', '344_365', '365_386'| in IN2P3. 
+
+The forced photometry tables, organized by filter-patch, contain the \verb|id|, \verb|objectId|, \verb|exposure_id|, \verb|mjd|, \verb|psfFlux|, \verb|psfFluxErr|, sorted by \verb|objectId|, where Flux is measured in calibrated $[ergs/ cm^{2} / sec / Hz]$.  
+
+
+% HERE HERE HERE 
+% take the rest of text from  ~/GradResearch/SDSS_S82_paper/main.tex  
+% incorporate whatever is useful, otherwise ignore... 
+
+
+% next : 
+% describe plots made using DeepSource data, including the one with extendedness,
+% source location,  eg. density of NCSA - IN2P3, comparison of NCSA -IN2P3 overlap (no description of that process anywhere else... ) 
+% insert here all questions that we have about the overlap, that I mentioned to Yusra....
+
+% then : 
+% how we calculated metrics : 
+% 1) full light curve - based 
+% 2) seasonal :
+%    - metrics per season 
+%    - lc seasonal aggregates
+
+% finally : 
+% - plots that we made with the combined NCSA-IN2P3 aggregates: 
+% in order that I prepared to show to Xiaohui : 
+% color-color   Sesar+2007 - like , all other color - color 
+% chi2 - chi2 plots ,  
+% differential counts 
+
+% - additional plots that I was able to make , such as those in ra,dec space...
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%% REFERENCES %%%%%%%%%%%%%%%%%%
+
+% The best way to enter references is to use BibTeX:
+
+\bibliographystyle{mnras}
+\bibliography{references} % if your bibtex file is called example.bib
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% Don't change these lines
+\bsp	% typesetting comment
+\label{lastpage}
+\end{document}
+
+% End of mnras_template.tex
