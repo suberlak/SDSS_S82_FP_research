@@ -189,7 +189,8 @@ The extendedness was defined by a cutoff in iPsfMag - iModelMag. Wherever iPsfMa
 % made in 07.2017_ra_dec_coverage.ipynb , based on S13Agg_first_look.ipynb...
 \begin{figure*}
 \includegraphics[width=\textwidth]{figs/Fig_extendedness_marginalize_NCSA.png}
-\caption{Histograms of vertical bins through Fig.~\ref{fig:extendedness}. With the fainter bins in iModelMag, the two distributions in iPsfMag - iModelMag become blended. This includes only NCSA data, with the same selection and subsampling as Fig.~\ref{fig:extendedness} (showing 1142716 sources in total).}
+\caption{Histograms of vertical bins through Fig.~\ref{fig:extendedness}. With the fainter bins in iModelMag, the two distributions in iPsfMag - iModelMag become blended. This includes only NCSA data, with the same selection and subsampling as Fig.~\ref{fig:extendedness} (showing 1142716 sources in total).
+See Palanque-Delabrouille+2016 Fig.2 for more on how iPsfMag-iModelMag can be used to select quasars. Specifically, nearby quasars may still have the host galaxy visible, which would in some cases not pass this criterion and be assigned extendedness 0. }
 \label{fig:extendedness_marginalized}
 \end{figure*}
 
@@ -204,8 +205,17 @@ For convenience and  data storage, about 20 patches per filter are included per 
 The forced photometry tables, organized by filter-patch, contain the \verb|id|, \verb|objectId|, \verb|exposure_id|, \verb|mjd|, \verb|psfFlux|, \verb|psfFluxErr|, sorted by \verb|objectId|, where Flux is measured in calibrated $[ergs/ cm^{2} / sec / Hz]$.  
 
 
-For each light curve we calculate features. One main choice is that the features (described in  Sec.~\ref{sec:features}) can be calculated either based on all epochs, or on  seasonally-binned epochs, or on seasonal averages 
+For each light curve we calculate features. One main choice is that the features (described in  Sec.~\ref{sec:features}) can be calculated either based on all epochs, or on  seasonally-binned epochs, or on seasonal averages. 
 
+Before calculating features, we convert flux to Janskys to avoid floating point error on very small numbers.  After removing all rows that are missing either flux, flux error, or time stamp,  we calculate the signal-to-noise ratio for each epoch : 
+
+\begin{equation}
+S/N = \frac{psfFlux} {psfFluxErr} 
+\end{equation}
+
+Wherever $S/N < 2 $ (including negative values of forced photometry flux), by representing each flux measurement as a Gaussian likelihood   $\mathcal{N}(psfFlux, psfFluxErr)$, we apply a Bayesian prior (including information about expected counts as a function of flux, and removing negative tail), and based on such truncated likelihood , we calculate mean, median, $2 \sigma$ level and the RMS (called faintMean, faintMedian, faintTwoSigma, faintRMS, as described  in the Faint Pipeline Report \url{https://github.com/suberlak/Faint_pipeline_report}).  For each flux measurement where $S/N < 2 $  we replace psfFlux with faintMean, and psfFluxErr with faintRMS. 
+
+This is the basic pre-processing applied  to all light curves.  What follows is either calculating full lightcurve-based features, or seasonally averaged features.  We first describe  the possible features in general, and then discuss the calculation of features for both full light curve and seasonally averaged light curve cases. 
 
 
 \section{Time Series Features}
@@ -215,16 +225,28 @@ For any time series (a collection of points with time stamps ) it is possible to
 Given a collection of fluxes with errors, and observation times : $\{ y_{i}, e_{i}, t_{i} \}$, where $i$ can run over all epochs of a given object (eg. 0 to 180 for an S82 object), or over the observations within a given section of a light curve (eg. a season, with approximately 40 points per season), or over the seasonally-binned light curve (with usually 4 seasons per light curve). 
 Thus $y$ can mean the flux value measured at a given epoch with forced photometry, but in the following definitions it can itself be an aggregate quantity, eg. a weighted mean of fluxes within a given season.  For clarity we separately define features based on raw measurements (fluxes), or aggregate quantities (eg. mean seasonally-binned fluxes).  
 
-First, consider raw forced photometry measurements.  An example light curve  from S82 is shown on Fig. XXX   ( a light curve with overplotted mean ,median,  and vertical double-arrows representing the distribution spread....).  We summarize the temporal information  (from observation times $t_{i}$) as : 
-\begin{itemize}
-	\item min(t)
-	\item max(t)
-	\item mean(t)
-\end{itemize}
+First, consider raw forced photometry measurements.  An example light curve  from S82 is shown on Fig. XXX   ( a light curve with overplotted mean ,median,  and vertical double-arrows representing the distribution spread....).  We summarize the temporal information  (from observation times $t_{i}$) as : minimum(t), maximum(t), mean(t). 
+
 
 Then we summarize the value of flux by error-weighted mean and median ($\mu_{w}(y,e)$, $med_{w}(y,e)$), together with uncertainties on those quantities (error on the mean and related error on the median). Both are useful to estimate the value of flux where most points can be found, but median is less sensitive to outliers. 
 
-We finally consider the noisiness of the data: the vertical dispersion of the flux values . This can be summarized by the robust interquartile-based deviation $\sigma_{G}$, weighted standard deviation about the weighed mean $\sigma_{w}$, $\chi^{2}_{DOF}$, robust $\chi^{2}_{R}$, and mean signal-to-noise ratio $\mu(y / e)$. 
+We finally consider the noisiness of the data: the vertical dispersion of the flux values . This can be summarized by the robust interquartile-based deviation $\sigma_{G}$, weighted standard deviation about the weighed mean $\sigma_{w}$, $\chi^{2}_{DOF}$, robust $\chi^{2}_{R}$, and mean signal-to-noise ratio $\mu(y / e)$.  The difference between robust $\chi^{2}$ and the $\chi^{2}$ per degree of freedom is that median-based robust $\chi^{2}$ is less sensitive against any outliers, by the virtue of definition of the median. We calculate $\chi^{2}$ as follows (note, that as mentioned before, $y_{i}$ could be a set of 120 points over entire light curve, or perhaps just a sub-section of those 40 points within a single season  -  Fig.~\ref{fig:lc_example}) : 
+
+% this is based on unweighted mean : is that ok  ? 
+\begin{equation}
+\chi^{2}_{DOF}  = \frac{1}{N-1} \sum{\frac{(y_{i} - \mu(y))^{2}}{e_{i}^{2}}}
+\end{equation}
+
+
+\begin{equation}
+\chi^{2}_{R} = 0.7413 (q75(Z) - q25(Z))
+\end{equation}
+
+where 
+
+\begin{equation}
+Z = \frac{y_{i} - median(y_{i})}{e_{i}}
+\end{equation}
 
 
 For weighted quantitites we introduce for each point a probability $p_{i}$ (often called weight).  In our case we choose $p_{i} = 1 / e_{i}^{2}$, which makes sense because we would expect that a given flux measurement is less reliable the larger the error (it could be a spurious measurement, bad pixel, etc - we are not sigma-clipping time series). 
@@ -252,6 +274,78 @@ and  the standard deviation :
 \begin{equation}
 \sigma(y_{i}) = \sqrt{\frac{\sum (y_{i} - \mu(y))^{2}}{N}}
 \end{equation}
+
+
+The robust interquartile $\sigma$ is :
+\begin{equation}
+\sigma_{G} = 0.7413 (q75(y) - q25(y))
+\end{equation}
+
+and the median  $med(y)$ is the fiftieth percentile  : 
+
+ \begin{equation}
+ med(y) = q50(y)
+ \end{equation}
+
+
+The error on the weighted mean is :
+
+\begin{equation}
+\sigma(\mu_{w}(y,p)) = 1 / \sqrt{\sum{p_{i}}}
+\end{equation}
+
+with the weights $p_{i}$ as above . 
+
+
+The error on the median is related to the error on the weighted  mean: 
+
+\begin{equation}
+\sigma(med(y)) = \sqrt{\pi / 2 } \sigma(\mu_{w}(y,p))
+\end{equation}
+
+
+
+
+
+Another measure of noisiness is more involved - it includes modelling the light curve as a  distribution of points with associated errors:  $\{ y_{i}, e_{i}\}$ (time information is lost). The so-called intrinsic variability $\sigma_{0}$ answers the question:  to what extent are the errors consistent with a combination of Gaussian distributions  $\mathcal{N}(y_{i}, e_{i})$ ? Our method of calculating the intrinsic variability $\sigma_{0}$ follows Ivezic+2014 chapter 5, and is further described in the Variability Report  \url{https://github.com/suberlak/Variability_report}. 
+
+
+\begin{figure}
+ \includegraphics[width=\columnwidth]{figs/Fig_illustrate_lighcurve_seasonal.png}
+ \caption{A plot showing a forced photometry  light curve for an example object from NCSA-processed filter-patch  g00\_22.  We mark August 1st of each year aftrer 2005 with vertical dashed line : this marks the beginning of each season. Observations have uneven cadence:  this is because more observations were scheduled since the commencement of the SDSS-III Supernova Survey in September 1st 2005.   For this reason we decided to consider all epochs prior to August 1st 2005 as a single season.  All consecutive seasons span a period of one calendar year.  We overplot the weighted mean $\mu_{w}(y,e)$, and the error on the weighted mean $\sigma(\mu_{w}(y,p))$. Each season is thus represented by the aggregate flux-related quantity with an associated error (eg. mean, median),  the measure of scatter ($\chi^{2}$, $\sigma_{G}$, etc.), and the mean time of observations within each season.   }
+ \label{fig:lc_example}
+\end{figure}
+
+
+We convert  the aggregate flux quantities (in Janskys) to magnitudes :
+
+\begin{equation}
+\mathrm{psfMean} = -2.5 * \log_{10}(\mathrm{psfFluxMean}) + 8.90  
+\end{equation}
+
+\begin{equation}
+\mathrm{psfMeanErr} = \frac{2}{\ln(10)} \mathrm{psfFluxMeanErr} / \mathrm{psfFluxMean}
+\end{equation}
+
+and similarly for median-based quantities. 
+
+Aggregate information is stored in patch-filter system  following the input.  We gather information about the same objects across all SDSS filters by merging the patch-filter aggregates.  The majority of objects have extinction information , and thus their color is corrected using extinction maps for RV = 3.1,  from Schlegel+98 : 
+
+\begin{equation}
+m_{corr} = m + A(m) * E(B-V)
+\end{equation}
+
+where $m \in \{ u,g,r,i,z \}$ is the magnitude of an object in a given filter, and correspondingly $A_{m} \in \{ 5.155, 3.793, 2.751, 2.086, 1.479 \}$. 
+
+
+
+At this stage we also add to each object variability metrics table the positional ra,dec data from DeepSource tables . We only consider for the following analysis objects that do not have deblender parents brighter than i=17 mag. 
+
+
+
+
+
+\section{}
 
 % HERE HERE HERE 
 
@@ -284,7 +378,11 @@ and  the standard deviation :
 
 
 
+\section*{Acknowledgements}
 
+Funding for the SDSS and SDSS-II has been provided by the Alfred P. Sloan Foundation, the Participating Institutions, the National Science Foundation, the U.S. Department of Energy, the National Aeronautics and Space Administration, the Japanese Monbukagakusho, the Max Planck Society, and the Higher Education Funding Council for England. The SDSS Web Site is http://www.sdss.org/.
+
+The SDSS is managed by the Astrophysical Research Consortium for the Participating Institutions. The Participating Institutions are the American Museum of Natural History, Astrophysical Institute Potsdam, University of Basel, University of Cambridge, Case Western Reserve University, University of Chicago, Drexel University, Fermilab, the Institute for Advanced Study, the Japan Participation Group, Johns Hopkins University, the Joint Institute for Nuclear Astrophysics, the Kavli Institute for Particle Astrophysics and Cosmology, the Korean Scientist Group, the Chinese Academy of Sciences (LAMOST), Los Alamos National Laboratory, the Max-Planck-Institute for Astronomy (MPIA), the Max-Planck-Institute for Astrophysics (MPA), New Mexico State University, Ohio State University, University of Pittsburgh, University of Portsmouth, Princeton University, the United States Naval Observatory, and the University of Washington. 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
