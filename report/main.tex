@@ -309,7 +309,7 @@ The error on the median is related to the error on the weighted  mean:
 
 Another measure of noisiness is more involved - it includes modelling the light curve as a  distribution of points with associated errors:  $\{ y_{i}, e_{i}\}$ (time information is lost). The so-called intrinsic variability $\sigma_{0}$ answers the question:  to what extent are the errors consistent with a combination of Gaussian distributions  $\mathcal{N}(y_{i}, e_{i})$ ? Our method of calculating the intrinsic variability $\sigma_{0}$ follows Ivezic+2014 chapter 5, and is further described in the Variability Report  \url{https://github.com/suberlak/Variability_report}. 
 
-
+% prepared with 07.2017_seasonal_averaging_illustrate.ipynb 
 \begin{figure}
  \includegraphics[width=\columnwidth]{figs/Fig_illustrate_lighcurve_seasonal.png}
  \caption{A plot showing a forced photometry  light curve for an example object from NCSA-processed filter-patch  g00\_22.  We mark August 1st of each year aftrer 2005 with vertical dashed line : this marks the beginning of each season. Observations have uneven cadence:  this is because more observations were scheduled since the commencement of the SDSS-III Supernova Survey in September 1st 2005.   For this reason we decided to consider all epochs prior to August 1st 2005 as a single season.  All consecutive seasons span a period of one calendar year.  We overplot the weighted mean $\mu_{w}(y,e)$, and the error on the weighted mean $\sigma(\mu_{w}(y,p))$. Each season is thus represented by the aggregate flux-related quantity with an associated error (eg. mean, median),  the measure of scatter ($\chi^{2}$, $\sigma_{G}$, etc.), and the mean time of observations within each season.   }
@@ -342,10 +342,64 @@ where $m \in \{ u,g,r,i,z \}$ is the magnitude of an object in a given filter, a
 At this stage we also add to each object variability metrics table the positional ra,dec data from DeepSource tables . We only consider for the following analysis objects that do not have deblender parents brighter than i=17 mag. 
 
 
+\section{Searching for QSO}
+
+Using the light curve based average properties we combine NCSA and IN2P3 light curve aggregate information. Given the caveat of removing objects with bright parents, and those that did not have E(B-V) information, we start with 7135337 objects. Fig.~\ref{fig:s82_histogram} shows the summary of distribution of compact sources (extendedness =0). We also plot the histogram of magnitude vs error on Fig.~\ref{fig:s82_errors}.
+
+% from 06.2017_SDSS_finding_QSO.ipynb : 
+
+\begin{figure}
+ \includegraphics[width=\columnwidth]{figs/Fig_1_unresolved_hist__all.png}
+ \caption{A histogram of all compact sources in S82.}
+ \label{fig:s82_histogram}
+\end{figure}
+
+\begin{figure*}
+\includegraphics[width=\textwidth]{figs/mag-error.png}
+\caption{Mean-based magnitudes vs errors for S82 objects with extendedness=0 (top), and extendedness=1 (bottom). From left to right, data in u,g,r,i,z filters. The color scale corresponds to $\log_{10}(\mathrm{counts})$. The fainter the object, the higher the mean error (psfMeanErr is based on psfMeanFluxErr, which is the error on the weighted mean of fluxes). }
+\label{fig:s82_errors}
+\end{figure*}
+
+
+We first select variable objects by selecting various regions in the $\chi^{2}_{DOF}-\chi^{2}_{R}$ space, as shown on Fig.~\ref{fig:s82_chi2space}
+
+\begin{figure*}
+ \includegraphics[width=\textwidth]{figs/Fig_2_chi2_ugri_e-0_mag_4-23_all.png}
+ \caption{$\chi^{2}_{DOF}-\chi^{2}_{R}$ space calculated for data in u,g,r,i  filters. Region S1 includes highly variable objects, S2a a transitional region, and S2b a region with possible variable candidates. We select variable candidates from S1 region, based on the g-band $\chi^{2}$. }
+ \label{fig:s82_chi2space}
+\end{figure*}
+
+
+Given  the $\chi^{2}$-based variability selection, we show the impact of that in the color-color  u-g vs g-r space by first reproducing Fig.3 of Sesar+2007 on Fig.~\ref{fig:s82_color}.
+
+
+\begin{figure}
+ \includegraphics[width=0.8\columnwidth]{figs/Fig_3_s1_g_3-23.png}
+ \caption{Reproduction of Fig.3 of Sesar+2007 with the new reprocessed S82 data. From top to bottom : total counts, variable counts, ratio of variable to total count. }
+ \label{fig:s82_color}
+\end{figure}
+
+Next we illustrate on Fig.~\ref{fig:s82_chi2_color} what is the impact of  selecting a region in the u-g vs g-r space in the $\chi^{2}$ space. The color-selected quasar sample uses the following conservative boundaries : 
+
+\begin{equation}
+-0.5 <u-g < 0.5
+\end{equation}
+
+
+\begin{equation}
+0 < g-r< 0.5
+\end{equation}
+
+
+\begin{figure*}
+ \includegraphics[width=\textwidth]{figs/Fig_4_chi2_panels__g-4-21.png}
+ \caption{An impact of color selection in variability space. Left panel contains all objects with 4<g<21, and extendedness=0 . The middle panel depicts the count of those objects that fulfill color criteria  $-0.5 <u-g < 0.5$ and $0 < g-r< 0.5$ . The right panel shows counts of  the ratio of number of color-selected objects to total number, i.e. ratio of middle to left panels. }
+ \label{fig:s82_chi2_color}
+\end{figure*}
 
 
 
-\section{}
+
 
 % HERE HERE HERE 
 
