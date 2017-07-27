@@ -663,7 +663,9 @@ def computeVarMetrics(group, flux_column='psfFlux' ,
                          })
     
 
-
+# 
+# deprecated code below ...
+# 
 def ComputeVarFullBinned(group): 
     
     ''' A function to calculate averages for the full lightcurve binned into seasons 
