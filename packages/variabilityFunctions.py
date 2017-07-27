@@ -292,7 +292,8 @@ def get_mu_sigma(xi,ei, N_boot=1000, return_plot_data = False, gridsize=70, sigm
                 return mu[ind[1]][0], sigma[ind[0]][0]
 
 def calcChi2raw(y, yerr):
-    """Compute simple reduced chi2  (mean-based) if more than 1 datapoints present
+    """Compute simple reduced chi2  (mean-based) if more than 1 datapoints 
+    present
     chi2 = np.sum(((flux-meanFlux)**2.0) / (fluxErr ** 2.0)) / (N-1.0)
     """
     N = len(y)
@@ -303,7 +304,8 @@ def calcChi2raw(y, yerr):
         return chi2/(N-1)
     
 def calcChi2robust(y, yerr):
-    """Compute simple robust reduced  chi2 (percentile-based) if more than 1 datapoints present
+    """Compute simple robust reduced  chi2 (percentile-based) if more than 1 
+    datapoints present
     """
     N = len(y)
     if N < 2:
@@ -410,15 +412,20 @@ def calcWeightedStDev(y, yerr, yWmean):
     I'm using Bessel's correction to make it unbiased ...
     
     # calculate  weighted standard deviation corrected for intrinsic scatter 
-    # using http://www.itl.nist.gov/div898/software/dataplot/refman2/ch2/weightsd.pdf
+    # using http://www.itl.nist.gov/div898/software/dataplot/refman2/
+    ch2/weightsd.pdf
     # Yusra uses 1/N-1 instead of N/N-1.... calcWStdCorrAndMean
-    # I'm pretty confused having read https://en.wikipedia.org/wiki/Bessel's_correction
-    # and https://en.wikipedia.org/wiki/Weighted_arithmetic_mean#Weighted_sample_variance
-    # after that http://stats.stackexchange.com/questions/6534/how-do-i-calculate-a-weighted-standard-deviation-in-excel 
+    # I'm pretty confused having read 
+    # https://en.wikipedia.org/wiki/Bessel's_correction
+    # and https://en.wikipedia.org/wiki/Weighted_arithmetic_mean#
+    Weighted_sample_variance
+    # after that http://stats.stackexchange.com/questions/6534
+    /how-do-i-calculate-a-weighted-standard-deviation-in-excel 
     # I'm done. 
 
 
-    # Okay, update  : using Bessel's correction ONLY makes sense with unweighted samples. 
+    # Okay, update  : using Bessel's correction ONLY makes sense with 
+    unweighted samples. 
     # Otherwise we are unnecessarily multiplying the standard deviation by 
     # sqrt(1/(N-1)).  
     # It is incorrect, because in the limit of identical errors.
@@ -433,9 +440,11 @@ def calcWeightedStDev(y, yerr, yWmean):
         return np.nan 
     else :     
         weights=1.0 / ( yerr *yerr)
-        return np.sqrt( (np.sum(weights * ((y - yWmean) ** 2.0)) / np.sum(weights)))  
+        return np.sqrt( (np.sum(weights * ((y - yWmean) ** 2.0)) / 
+            np.sum(weights)))  
         # used to be :
-        # np.sqrt( (np.sum(weights * ((y - yWmean) ** 2.0)) / np.sum(weights)))  
+        # np.sqrt( (np.sum(weights * ((y - yWmean) ** 2.0)) / 
+        #np.sum(weights)))  
 
 def calcSigmaG(y):
     ''' Calculate the  interquartile sigma.
@@ -452,8 +461,9 @@ def calcSigmaG(y):
         return 0.7413 * (q75-q25)
 
 
-def computeVarMetrics(group, flux_column='psfFlux' , error_column='psfFluxErr', time_column ='mjd', verbose=True,
-    calc_sigma_pdf =True, seasonal_average = False):
+def computeVarMetrics(group, flux_column='psfFlux' , 
+    error_column='psfFluxErr', time_column ='mjd', 
+    verbose=True, calc_sigma_pdf =True, seasonal_average = False):
     ''' Variability metrics to compute for each object on full lightcurve or 
     all points in a given season.  
 
