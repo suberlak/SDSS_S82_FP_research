@@ -130,9 +130,10 @@ The reprocessing included preparing i-band coadds, source detection on the coadd
 \section{S82 reprocessing}
 \label{sec:data}
 
+
 We use data from all SDSS runs up to an including run 7202 (Data Release 7), including all 6 SDSS camera columns. Stripe 82 survey covered an equatorial strip of the sky, defined by declination limits of $\pm1.27\deg$, extending from R.A. $\approx$ $20^{h} (320 \deg)$ to R.A.  $\approx$ $4^{h} (55 \deg)$ \citep{sesar2007,sesar2010}. Observations conducted prior to September 2005 (part of SDSS I-II) had a more sparse sampling than SDSS-III, and the SDSS Supernova Survey, which ran between September 1st - November 30th each year between 2005-2007. 
 
-The SDSS Stripe 82 DR7  data  was processed in two data centers : NCSA (National Center for Supercomputing Applications, University of Illinois at Urbana-Champaign, IL) and IN2P3  (Institut national de physique nucl\'eaire et de physique des particules in Paris, France). NCSA processed data from $-40 \deg \, (+320 \deg) < RA < +10 \deg $ and IN2P3 with $ +5 \deg < RA < +55 \deg$ . There is a $5 \deg$ overlap, used to confirm that the data processing pipeline in both data centers yields identical data products. The entire strip was split into smaller patches\footnote{patch boundaries can be found \url{https://lsst-web.ncsa.illinois.edu/lsstdata/dr-w2013/coaddBounds.txt} }
+The SDSS Stripe 82 DR7  data  was processed in two data centers : NCSA (National Center for Supercomputing Applications, University of Illinois at Urbana-Champaign, IL) and IN2P3  (Institut national de physique nucl\'eaire et de physique des particules in Paris, France). NCSA processed data from $-40 \deg \, (+320 \deg) < RA < +10 \deg $ and IN2P3 with $ +5 \deg < RA < +55 \deg$ . There is a $5 \deg$ overlap, used to confirm that the data processing pipeline in both data centers yields identical data products. 
 
 All epochs (individual images) were background-subtracted, and then scaled from the Digital Unit counts to fluxes by comparing standard objects against the \citep{ivezic2007} catalog  (similar to  Jiang+2014). We downloaded the data from the NCSA storage at \url{https://lsst-web.ncsa.illinois.edu/~yusra/S13Agg/rawDataFPSplit/}.   
 
@@ -142,16 +143,66 @@ The DeepSource tables  and DeepForcedPhot tables can be joined on deepSourceId, 
 
 Yusra AlSayyad and Ian McGreer calculated summary aggregate metrics on the S82 S13 data, using the code available at \url{https://github.com/imcgreer/QLFz4}. This information was used in McGreer+2013, and AlSayyad 2016 PhD Thesis.  
 
-Source extraction often needs to address the problem of blended sources.  In such case the process of deblending assigns a single ParentSourceId to a blended clump. Sources with parents brighter than  17 mag in the coadded i-band are considered unreliable, since they were not handled well by the deblender . ParentSourceId is null for objects that are their own parents (or in other words, are not blended). 
+In the following sections we describe the construction of DeepSource and DeepForcedSource tables, and what data products can be extracted from each catalog. 
+
+\subsection{DeepSource tables: coadd source detection}
+
+
+Source extraction often needs to address the problem of blended sources.  In such case the process of deblending assigns a single ParentSourceId to a blended clump. For an object which is a parent (eg. a galaxy), ParentSourceId is null.  Solitary sources which are not blended  in clumps are their own parents. 
+
+Sources with parents brighter than  17 mag in the coadded i-band are considered unreliable, since they were not handled well by the deblender . ParentSourceId is null for objects that are their own parents (or in other words, are not blended). 
+
+Sources were detected and measured in i-band coadds. Locations for the  sources with coadd i-band psfMag < 23.5  were used as a seed for forced photometry across epochs and bands. The data was simultaneously processed at NCSA (-40 < RA < 10) and IN2P3 (5 < RA < 55) - there is a 2.5 x 5 square degrees overlap for validation. Imaging at each Data Release Production (DRP)  was processed independently.  Fig.~\ref{fig:ra_dec} shows the location on the sky of the forced photometry seeds (coadd  iPsfMag < 23.5, parent iPsfMag > 17 mag). 
+
+
+
+% figure from 07.2017_ra_dec_coverage.ipynb
+
+\begin{figure*}
+\includegraphics[width=\textwidth]{figs/Fig_radec_test_all_iPsfMag_seeds.png}
+\caption{Combined NCSA (left) and IN2P3 (right) i-band forced photometry seeds. Apart from requiring these primary sources  to have  the coadd magnitude iPsfMag < 23.5, and have parents fainter than 17 mag, there are no other cuts applied to the  9491361 objects shown.  In particular, for NCSA of 5474350 sources we remove 585920 with parents brighter than 17 mag, and for IN2P3 of 4998901 sources we remove 395970. This leaves 4888430 objects in NCSA, and 4602931 in IN2P3, so that in total we have 9491361 objects. One can clearly see the 2.5x5 degrees overlap region (which has a higher source density). To aid plotting so many objects we subsampled  25\% of all objects  : randomness ensures that all spatial features are preserved. There are some regions where there are no objects satisfying our criteria, seen here as blank spots. In particular, region around ra=323.36258, dec=-0.82325 is an M2 globular cluster, and the sheer stellar density prevented from using any sources there as seeds. }
+\label{fig:ra_dec}
+\end{figure*}
+
 
 Imposing a cut of 23.5 mag in coadded i-band , the main DeepSource NCSA -processed catalogs used contain 5474350 primary sources , and 1957486 non-primary sources (deblender parents and secondary detections). IN2P3-processed portion of the S82 includes 4998901 primary sources, and 1882303 non-primary sources.   
 
-Both NCSA and IN2P3-processed  regions of S82 were divided into smaller sections called patches. There are 11 patches per each DPC : 
-%\verb|'00_21', '22_43','44_65', '66_87' ,'88_109','110_131',
-%    '132_153', '154_175',  '176_181', '365_387', '388_409'| in NCSA,  and \verb|'155_176', '176_197','197_218', '218_239', '239_260',
-%    '260_281', '281_302', '302_323','323_344', '344_365', '365_386'| in IN2P3. 
+Both NCSA and IN2P3-processed  regions of S82 were divided into smaller sections called patches\footnote{patch boundaries can be found \url{https://lsst-web.ncsa.illinois.edu/lsstdata/dr-w2013/coaddBounds.txt} }  , as illustrated on Fig.~\ref{fig:patches}.  
+
+% figure from 02.2017_IN2P3_NCSA_ebv_patches.ipynb
+\begin{figure}
+\includegraphics[width=\columnwidth]{figs/Fig_illustrate_SDSS_S82_patches.png}
+\caption{An illustration of 252 patches out of 4920 patches. Patches are denoted by (I,J) coordinate , where I runs in $\delta$ (from South to North), and J along $\alpha$, from higher to lower right ascension values.  }
+\label{fig:patches}
+\end{figure}
+
+
+The extendedness was defined by a cutoff in iPsfMag - iModelMag. Wherever iPsfMag - iModelMag >  0.085645 , extendedness = 1, and 0 otherwise.  This is illustrated on Fig.~\ref{fig:extendedness}, and Fig.~\ref{fig:extendedness_marginalized}. 
+
+% made in 07.2017_ra_dec_coverage.ipynb , based on S13Agg_first_look.ipynb...
+\begin{figure}
+\includegraphics[width=\columnwidth]{figs/Fig_extendedness_psf_vs_model_mag_NCSA.png}
+\caption{The NCSA data for objects with iPsfMag < 23.5, as above. There is 5474350 such objecs, and we subsampled every fourth object at random for plotting (1370001 objects are shown). We did not remove objects with parents < 17 mag. This scatter plot demonstrates the simple method of defininig extendedness : as a threshold in iPsfMag-iModelMag = 0.085645. All sources above that line are considered extended (green), and those above : compact (red). Extended sources have extendedness 1, otherwise it is 0.  This plot also illustrates an important point that the uncertainty in classifying a given coadd source  as 'extended' is magnitude-dependent, and the fainter the object, the less definite is this distinction.  This is because distant, faint galaxies become more compact, and thus the green objects approach the red objects in the faint limit. }
+\label{fig:extendedness}
+\end{figure}
+
+% made in 07.2017_ra_dec_coverage.ipynb , based on S13Agg_first_look.ipynb...
+\begin{figure*}
+\includegraphics[width=\textwidth]{figs/Fig_extendedness_marginalize_NCSA.png}
+\caption{Histograms of vertical bins through Fig.~\ref{fig:extendedness}. With the fainter bins in iModelMag, the two distributions in iPsfMag - iModelMag become blended. This includes only NCSA data, with the same selection and subsampling as Fig.~\ref{fig:extendedness} (showing 1142716 sources in total).}
+\label{fig:extendedness_marginalized}
+\end{figure*}
+
+
+
+\subsection{DeepForcedSource : forced photometry tables}
+
+
+For convenience and  data storage, about 20 patches per filter are included per filter-patch file (eg. 'g00\_22.csv' including forced photometry for all objects within patches J 0 to 22, in g filter  ). In particular, the following patch files  were processed in NCSA: 00\_21, 22\_43, 44\_65, 66\_87, 88\_109, 110\_131, 132\_153, 154\_175, 176\_181, 365\_387, 388\_409,  and the following in IN2P3 : 155\_176, 176\_197,197\_218, 218\_239, 239\_260, 260\_281, 281\_302, 302\_323, 323\_344, 344\_365, 365\_386.
+
 
 The forced photometry tables, organized by filter-patch, contain the \verb|id|, \verb|objectId|, \verb|exposure_id|, \verb|mjd|, \verb|psfFlux|, \verb|psfFluxErr|, sorted by \verb|objectId|, where Flux is measured in calibrated $[ergs/ cm^{2} / sec / Hz]$.  
+
 
 
 % HERE HERE HERE 
@@ -159,9 +210,10 @@ The forced photometry tables, organized by filter-patch, contain the \verb|id|, 
 % incorporate whatever is useful, otherwise ignore... 
 
 
-% next : 
-% describe plots made using DeepSource data, including the one with extendedness,
-% source location,  eg. density of NCSA - IN2P3, comparison of NCSA -IN2P3 overlap (no description of that process anywhere else... ) 
+% NEXT : 
+%
+% if have time :  
+% describe the  comparison of NCSA -IN2P3 overlap (no description of that process anywhere else... ) 
 % insert here all questions that we have about the overlap, that I mentioned to Yusra....
 
 % then : 
