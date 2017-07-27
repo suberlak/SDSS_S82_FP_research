@@ -204,8 +204,57 @@ For convenience and  data storage, about 20 patches per filter are included per 
 The forced photometry tables, organized by filter-patch, contain the \verb|id|, \verb|objectId|, \verb|exposure_id|, \verb|mjd|, \verb|psfFlux|, \verb|psfFluxErr|, sorted by \verb|objectId|, where Flux is measured in calibrated $[ergs/ cm^{2} / sec / Hz]$.  
 
 
+For each light curve we calculate features. One main choice is that the features (described in  Sec.~\ref{sec:features}) can be calculated either based on all epochs, or on  seasonally-binned epochs, or on seasonal averages 
+
+
+
+\section{Time Series Features}
+\label{sec:features}
+For any time series (a collection of points with time stamps ) it is possible to calculate a variety of features. An excellent overview is included in Sokolovsky+2016, who makes an important distinction between scatter-based features (that he calls indices), and correlation-based ones. In our treatment we almost exclusively calculate scatter-based indices ($\chi^{2}$, weighted standard deviation, weighted mean, weighted median, interquartile range ). We encourage the reader to also consult existing packages meant for feature engineering (FATS: Feature Analysis for Time Series, Nun+2015 \url{https://github.com/isadoranun/FATS};  UPSILoN : AUtomated Classification for Periodic Variable Stars using MachIne LearNing Kim\&Bailer-Jones 2016 \url{https://github.com/dwkim78/upsilon};  TSFRESH : Time Series Feature extraction based on scalable hypothesis tests,  Christ+2016 \url{https://github.com/blue-yonder/tsfresh}). 
+
+Given a collection of fluxes with errors, and observation times : $\{ y_{i}, e_{i}, t_{i} \}$, where $i$ can run over all epochs of a given object (eg. 0 to 180 for an S82 object), or over the observations within a given section of a light curve (eg. a season, with approximately 40 points per season), or over the seasonally-binned light curve (with usually 4 seasons per light curve). 
+Thus $y$ can mean the flux value measured at a given epoch with forced photometry, but in the following definitions it can itself be an aggregate quantity, eg. a weighted mean of fluxes within a given season.  For clarity we separately define features based on raw measurements (fluxes), or aggregate quantities (eg. mean seasonally-binned fluxes).  
+
+First, consider raw forced photometry measurements.  An example light curve  from S82 is shown on Fig. XXX   ( a light curve with overplotted mean ,median,  and vertical double-arrows representing the distribution spread....).  We summarize the temporal information  (from observation times $t_{i}$) as : 
+\begin{itemize}
+	\item min(t)
+	\item max(t)
+	\item mean(t)
+\end{itemize}
+
+Then we summarize the value of flux by error-weighted mean and median ($\mu_{w}(y,e)$, $med_{w}(y,e)$), together with uncertainties on those quantities (error on the mean and related error on the median). Both are useful to estimate the value of flux where most points can be found, but median is less sensitive to outliers. 
+
+We finally consider the noisiness of the data: the vertical dispersion of the flux values . This can be summarized by the robust interquartile-based deviation $\sigma_{G}$, weighted standard deviation about the weighed mean $\sigma_{w}$, $\chi^{2}_{DOF}$, robust $\chi^{2}_{R}$, and mean signal-to-noise ratio $\mu(y / e)$. 
+
+
+For weighted quantitites we introduce for each point a probability $p_{i}$ (often called weight).  In our case we choose $p_{i} = 1 / e_{i}^{2}$, which makes sense because we would expect that a given flux measurement is less reliable the larger the error (it could be a spurious measurement, bad pixel, etc - we are not sigma-clipping time series). 
+
+That way, the weighted mean is  :
+
+\begin{equation}
+\mu_{w}(y) = \frac{\sum{p_{i}y_{i}}}{p_{i}}
+\end{equation}
+
+And the weighted standard deviation : 
+
+\begin{equation}
+\sigma_{w}(y_{i}) = \sqrt{\frac{\sum{p_{i} (y_{i} - \mu_{w}(y))^{2}}}{\sum{p_{i}}}}
+\end{equation}
+
+as shown in the Variability Report \url{https://github.com/suberlak/Variability_report}, with all probabilities equal , the weighted mean becomes the mean : 
+
+\begin{equation}
+\mu(y) = \frac{\sum{y_{i}}}{N}
+\end{equation}
+
+and  the standard deviation : 
+
+\begin{equation}
+\sigma(y_{i}) = \sqrt{\frac{\sum (y_{i} - \mu(y))^{2}}{N}}
+\end{equation}
 
 % HERE HERE HERE 
+
 % take the rest of text from  ~/GradResearch/SDSS_S82_paper/main.tex  
 % incorporate whatever is useful, otherwise ignore... 
 
