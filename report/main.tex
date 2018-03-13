@@ -347,13 +347,13 @@ At this stage we also add to each object variability metrics table the positiona
 Using the light curve based average properties we combine NCSA and IN2P3 light curve aggregate information. Given the caveat of removing objects with bright parents, and those that did not have E(B-V) information, we start with 7135337 objects. Fig.~\ref{fig:s82_histogram} shows the summary of distribution of compact sources (extendedness =0). We also plot the histogram of magnitude vs error on Fig.~\ref{fig:s82_errors}.
 
 % from 06.2017_SDSS_finding_QSO.ipynb : 
-
 \begin{figure}
  \includegraphics[width=\columnwidth]{figs/Fig_1_unresolved_hist__all.png}
  \caption{A histogram of all compact sources in S82.}
  \label{fig:s82_histogram}
 \end{figure}
 
+% from 06.2017_SDSS_finding_QSO.ipynb : 
 \begin{figure*}
 \includegraphics[width=\textwidth]{figs/mag-error.png}
 \caption{Mean-based magnitudes vs errors for S82 objects with extendedness=0 (top), and extendedness=1 (bottom). From left to right, data in u,g,r,i,z filters. The color scale corresponds to $\log_{10}(\mathrm{counts})$. The fainter the object, the higher the mean error (psfMeanErr is based on psfMeanFluxErr, which is the error on the weighted mean of fluxes). }
@@ -363,6 +363,7 @@ Using the light curve based average properties we combine NCSA and IN2P3 light c
 
 We first select variable objects by selecting various regions in the $\chi^{2}_{DOF}-\chi^{2}_{R}$ space, as shown on Fig.~\ref{fig:s82_chi2space}
 
+% from 06.2017_SDSS_finding_QSO.ipynb : 
 \begin{figure*}
  \includegraphics[width=\textwidth]{figs/Fig_2_chi2_ugri_e-0_mag_4-23_all.png}
  \caption{$\chi^{2}_{DOF}-\chi^{2}_{R}$ space calculated for data in u,g,r,i  filters. Region S1 includes highly variable objects, S2a a transitional region, and S2b a region with possible variable candidates. We select variable candidates from S1 region, based on the g-band $\chi^{2}$. }
@@ -372,7 +373,7 @@ We first select variable objects by selecting various regions in the $\chi^{2}_{
 
 Given  the $\chi^{2}$-based variability selection, we show the impact of that in the color-color  u-g vs g-r space by first reproducing Fig.3 of Sesar+2007 on Fig.~\ref{fig:s82_color}.
 
-
+% from 06.2017_SDSS_finding_QSO.ipynb : 
 \begin{figure}
  \includegraphics[width=0.8\columnwidth]{figs/Fig_3_s1_g_3-23.png}
  \caption{Reproduction of Fig.3 of Sesar+2007 with the new reprocessed S82 data. From top to bottom : total counts, variable counts, ratio of variable to total count. }
@@ -390,7 +391,7 @@ Next we illustrate on Fig.~\ref{fig:s82_chi2_color} what is the impact of  selec
 0 < g-r< 0.5
 \end{equation}
 
-
+% from 06.2017_SDSS_finding_QSO.ipynb : 
 \begin{figure*}
  \includegraphics[width=\textwidth]{figs/Fig_4_chi2_panels__g-4-21.png}
  \caption{An impact of color selection in variability space. Left panel contains all objects with 4<g<21, and extendedness=0 . The middle panel depicts the count of those objects that fulfill color criteria  $-0.5 <u-g < 0.5$ and $0 < g-r< 0.5$ . The right panel shows counts of  the ratio of number of color-selected objects to total number, i.e. ratio of middle to left panels. }
@@ -398,7 +399,31 @@ Next we illustrate on Fig.~\ref{fig:s82_chi2_color} what is the impact of  selec
 \end{figure*}
 
 
+We illustrate the competitiveness of this quasar sample by plotting differential counts (a raw product often used as a first look into dataset in Quasar Luminosity Function studies) on Figs.~\ref{fig:diff_counts} and ~\ref{fig:diff_counts_g}
 
+
+% made with 06.2017_SDSS_differential_counts
+% solution from https://tex.stackexchange.com/questions/5769/two-figures-side-by-side 
+\begin{figure*}
+\includegraphics[width=0.48\textwidth]{figs/Fig_5_only_color.png}
+\includegraphics[width=0.48\textwidth]{figs/Fig_5_s1_gt_2.png}
+\caption{Two four-panel figures side by side for the ease of comparison.  Both contain counts in the u vs u-g and  u-g vs g-r,  colored by regions marked on the panel, and differential counts in u and r (see Fig.1 of Ivezic+2004).  The counts contain only objects as selected by u-g vs g-r color cuts, to colors on the differential counts panels corresponds to the colors on u-g vs g-r space. Red objects are mostly quasars, blue: hot stars (one can easily pick out two white dwarf branches, see  Fig.23 and 24 in Ivezic+2007), green : transitional region, black : main sequence stars .  Left set of four panels   : only color-selected object . Right  set : variability and color-selected objects. Note that including $\chi^{2}_{DOF,R}(g) > 2$ cut we vastly reduce contamination due to main sequence stars, and hot white  dwarfs.  }
+\label{fig:diff_counts}
+\end{figure*}
+
+% made with 06.2017_SDSS_differential_counts
+\begin{figure*}
+\includegraphics[width=0.48\textwidth]{figs/Fig_5_only_color_g.png}
+\includegraphics[width=0.48\textwidth]{figs/Fig_5_s1_gt_2_g.png}
+\caption{As Fig.~\ref{fig:diff_counts}, but showing counts in g band. Left : only color selection, right : color and variability selection. }
+\label{fig:diff_counts_g}
+\end{figure*}
+
+
+\begin{figure}\includegraphics[width=\columnwidth]{figs/Fig1_s1_gt_2_gr-ri_ri-iz.png}
+\caption{We also plot the counts in  g-r vs r-i and r-i vs i-z,  colored by u-g vs g-r regions as in Fig.~\ref{fig:diff_counts}}. 
+\label{fig:diff_counts_ri}
+\end{figure}
 
 
 % HERE HERE HERE 
