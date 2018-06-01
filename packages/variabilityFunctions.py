@@ -104,7 +104,8 @@ def get_pdf_info(sigma=None, p_sigma=None):
     stats['sigmaPdfMax'] = sigmaPdfMax
     return stats 
 
-def get_mu_sigma(xi,ei, N_boot=1000, return_plot_data = False, gridsize=70, sigma_gridsize=None, mu_gridsize=None, 
+def get_mu_sigma(xi,ei, N_boot=1000, return_plot_data = False, 
+    gridsize=70, sigma_gridsize=None, mu_gridsize=None, 
     return_sigma_pdf_info = False):
     ''' A short function
     to calculate a full mu, sigma, based 
@@ -185,9 +186,8 @@ def get_mu_sigma(xi,ei, N_boot=1000, return_plot_data = False, gridsize=70, sigm
     # bootstrapped resamples of sigma yield 0 ... 
     if max(sigma_boot) < np.std(xi) : 
         # I choose the regular standard deviation, 
-        # not the weighted  standard deviation...
-        max_sigma =  np.std(xi)
-        sigma = np.linspace(0 , max_sigma, sigma_gridsize)
+        # not the weighted  standard deviation... 
+        sigma = np.linspace(0 , np.std(xi), sigma_gridsize)
     else:  # how it used to be ...
         sigma = np.linspace(0, max(sigma_boot), sigma_gridsize)
     mu = np.linspace(min(mu_boot), max(mu_boot), mu_gridsize)
